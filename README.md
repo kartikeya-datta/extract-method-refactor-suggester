@@ -15,5 +15,12 @@ A machine learning-based project to detect and recommend Extract Method refactor
 - notebooks/: Exploratory analysis
 - results/: Visualizations, evaluation outputs
 
+
+## 🔧 Setup Instructions for Joern
+1. Download Joern from: https://github.com/joernio/joern/releases
+2. Extract it to `~/tools/joern`
+3. Add it to PATH or use `./joern` directly from that folder
+
+
 ## Status
 🔧 Work in progress. Stay tuned!
