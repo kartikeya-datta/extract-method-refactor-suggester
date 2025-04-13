@@ -1,0 +1,197 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/13841.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/13841.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/13841.java
+text:
+```scala
+S@@tringBuilder buf = new StringBuilder("{typeselector type: ");
+
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package org.apache.tools.ant.types.selectors;
+
+import java.io.File;
+
+import org.apache.tools.ant.types.EnumeratedAttribute;
+import org.apache.tools.ant.types.Parameter;
+
+/**
+ * Selector that selects a certain kind of file: directory or regular.
+ *
+ * @since 1.6
+ */
+public class TypeSelector extends BaseExtendSelector {
+
+    private String type = null;
+
+    /** Key to used for parameterized custom selector */
+    public static final String TYPE_KEY = "type";
+
+    /**
+     * Creates a new <code>TypeSelector</code> instance.
+     *
+     */
+    public TypeSelector() {
+    }
+
+    /**
+     * @return a string describing this object
+     */
+    public String toString() {
+        StringBuffer buf = new StringBuffer("{typeselector type: ");
+        buf.append(type);
+        buf.append("}");
+        return buf.toString();
+    }
+
+    /**
+     * Set the type of file to require.
+     * @param fileTypes the type of file - file or dir
+     */
+    public void setType(FileType fileTypes) {
+        this.type = fileTypes.getValue();
+    }
+
+    /**
+     * When using this as a custom selector, this method will be called.
+     * It translates each parameter into the appropriate setXXX() call.
+     *
+     * @param parameters the complete set of parameters for this selector
+     */
+    public void setParameters(Parameter[] parameters) {
+        super.setParameters(parameters);
+        if (parameters != null) {
+            for (int i = 0; i < parameters.length; i++) {
+                String paramname = parameters[i].getName();
+                if (TYPE_KEY.equalsIgnoreCase(paramname)) {
+                    FileType t = new FileType();
+                    t.setValue(parameters[i].getValue());
+                    setType(t);
+                } else {
+                    setError("Invalid parameter " + paramname);
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks to make sure all settings are kosher. In this case, it
+     * means that the pattern attribute has been set.
+     *
+     */
+    public void verifySettings() {
+        if (type == null) {
+            setError("The type attribute is required");
+        }
+    }
+
+    /**
+     * The heart of the matter. This is where the selector gets to decide
+     * on the inclusion of a file in a particular fileset.
+     *
+     * @param basedir the base directory the scan is being done from
+     * @param filename is the name of the file to check
+     * @param file is a java.io.File object the selector can use
+     * @return whether the file should be selected or not
+     */
+    public boolean isSelected(File basedir, String filename, File file) {
+
+        // throw BuildException on error
+        validate();
+
+        if (file.isDirectory()) {
+            return type.equals(FileType.DIR);
+        } else {
+            return type.equals(FileType.FILE);
+        }
+    }
+
+    /**
+     * Enumerated attribute with the values for types of file
+     */
+    public static class FileType extends EnumeratedAttribute {
+        /** the string value for file */
+        public static final String FILE = "file";
+        /** the string value for dir */
+        public static final String DIR = "dir";
+
+        /**
+         * @return the values as an array of strings
+         */
+        public String[] getValues() {
+            return new String[]{FILE, DIR};
+        }
+    }
+
+
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/13841.java

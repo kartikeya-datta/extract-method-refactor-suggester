@@ -1,0 +1,214 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7677.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7677.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7677.java
+text:
+```scala
+v@@oid recover(boolean indexShouldExists, RecoveryStatus recoveryStatus) throws IndexShardGatewayRecoveryException;
+
+/*
+ * Licensed to Elastic Search and Shay Banon under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. Elastic Search licenses this
+ * file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.elasticsearch.index.gateway;
+
+import org.elasticsearch.ElasticSearchIllegalStateException;
+import org.elasticsearch.index.CloseableIndexComponent;
+import org.elasticsearch.index.deletionpolicy.SnapshotIndexCommit;
+import org.elasticsearch.index.shard.IndexShardComponent;
+import org.elasticsearch.index.translog.Translog;
+
+/**
+ * @author kimchy (shay.banon)
+ */
+public interface IndexShardGateway extends IndexShardComponent, CloseableIndexComponent {
+
+    String type();
+
+    /**
+     * The last / on going recovery status.
+     */
+    RecoveryStatus recoveryStatus();
+
+    /**
+     * The last snapshot status performed. Can be <tt>null</tt>.
+     */
+    SnapshotStatus lastSnapshotStatus();
+
+    /**
+     * The current snapshot status being performed. Can be <tt>null</tt> indicating that no snapshot
+     * is being executed currently.
+     */
+    SnapshotStatus currentSnapshotStatus();
+
+    /**
+     * Recovers the state of the shard from the gateway.
+     */
+    void recover(RecoveryStatus recoveryStatus) throws IndexShardGatewayRecoveryException;
+
+    /**
+     * Snapshots the given shard into the gateway.
+     */
+    SnapshotStatus snapshot(Snapshot snapshot) throws IndexShardGatewaySnapshotFailedException;
+
+    /**
+     * Returns <tt>true</tt> if snapshot is even required on this gateway (i.e. mainly handles recovery).
+     */
+    boolean requiresSnapshot();
+
+    /**
+     * Returns <tt>true</tt> if this gateway requires scheduling management for snapshot
+     * operations.
+     */
+    boolean requiresSnapshotScheduling();
+
+    SnapshotLock obtainSnapshotLock() throws Exception;
+
+    public static interface SnapshotLock {
+        void release();
+    }
+
+    public static final SnapshotLock NO_SNAPSHOT_LOCK = new SnapshotLock() {
+        @Override public void release() {
+        }
+    };
+
+    public static class Snapshot {
+        private final SnapshotIndexCommit indexCommit;
+        private final Translog.Snapshot translogSnapshot;
+
+        private final long lastIndexVersion;
+        private final long lastTranslogId;
+        private final long lastTranslogLength;
+        private final int lastTotalTranslogOperations;
+
+        public Snapshot(SnapshotIndexCommit indexCommit, Translog.Snapshot translogSnapshot, long lastIndexVersion, long lastTranslogId, long lastTranslogLength, int lastTotalTranslogOperations) {
+            this.indexCommit = indexCommit;
+            this.translogSnapshot = translogSnapshot;
+            this.lastIndexVersion = lastIndexVersion;
+            this.lastTranslogId = lastTranslogId;
+            this.lastTranslogLength = lastTranslogLength;
+            this.lastTotalTranslogOperations = lastTotalTranslogOperations;
+        }
+
+        /**
+         * Indicates that the index has changed from the latest snapshot.
+         */
+        public boolean indexChanged() {
+            return lastIndexVersion != indexCommit.getVersion();
+        }
+
+        /**
+         * Indicates that a new transaction log has been created. Note check this <b>before</b> you
+         * check {@link #sameTranslogNewOperations()}.
+         */
+        public boolean newTranslogCreated() {
+            return translogSnapshot.translogId() != lastTranslogId;
+        }
+
+        /**
+         * Indicates that the same translog exists, but new operations have been appended to it. Throws
+         * {@link ElasticSearchIllegalStateException} if {@link #newTranslogCreated()} is <tt>true</tt>, so
+         * always check that first.
+         */
+        public boolean sameTranslogNewOperations() {
+            if (newTranslogCreated()) {
+                throw new ElasticSearchIllegalStateException("Should not be called when there is a new translog");
+            }
+            return translogSnapshot.length() > lastTranslogLength;
+        }
+
+        public SnapshotIndexCommit indexCommit() {
+            return indexCommit;
+        }
+
+        public Translog.Snapshot translogSnapshot() {
+            return translogSnapshot;
+        }
+
+        public long lastIndexVersion() {
+            return lastIndexVersion;
+        }
+
+        public long lastTranslogId() {
+            return lastTranslogId;
+        }
+
+        public long lastTranslogLength() {
+            return lastTranslogLength;
+        }
+
+        public int lastTotalTranslogOperations() {
+            return this.lastTotalTranslogOperations;
+        }
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7677.java

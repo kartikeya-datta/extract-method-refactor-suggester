@@ -1,0 +1,152 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/1028.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/1028.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/1028.java
+text:
+```scala
+r@@eturn sb.toString();
+
+package org.apache.lucene.search;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * Expert: A ScoreDoc which also contains information about
+ * how to sort the referenced document.  In addition to the
+ * document number and score, this object contains an array
+ * of values for the document from the field(s) used to sort.
+ * For example, if the sort criteria was to sort by fields
+ * "a", "b" then "c", the <code>fields</code> object array
+ * will have three elements, corresponding respectively to
+ * the term values for the document in fields "a", "b" and "c".
+ * The class of each element in the array will be either
+ * Integer, Float or String depending on the type of values
+ * in the terms of each field.
+ *
+ * <p>Created: Feb 11, 2004 1:23:38 PM
+ *
+ * @since   lucene 1.4
+ * @see ScoreDoc
+ * @see TopFieldDocs
+ */
+public class FieldDoc extends ScoreDoc {
+
+  /** Expert: The values which are used to sort the referenced document.
+   * The order of these will match the original sort criteria given by a
+   * Sort object.  Each Object will be either an Integer, Float or String,
+   * depending on the type of values in the terms of the original field.
+   * @see Sort
+   * @see Searcher#search(Query,Filter,int,Sort)
+   */
+  public Comparable[] fields;
+
+  /** Expert: Creates one of these objects with empty sort information. */
+  public FieldDoc (int doc, float score) {
+    super (doc, score);
+  }
+
+  /** Expert: Creates one of these objects with the given sort information. */
+  public FieldDoc (int doc, float score, Comparable[] fields) {
+    super (doc, score);
+    this.fields = fields;
+  }
+  
+  // A convenience method for debugging.
+  @Override
+  public String toString() {
+    // super.toString returns the doc and score information, so just add the
+          // fields information
+    StringBuilder sb = new StringBuilder(super.toString());
+    sb.append("[");
+    for (int i = 0; i < fields.length; i++) {
+            sb.append(fields[i]).append(", ");
+          }
+    sb.setLength(sb.length() - 2); // discard last ", "
+    sb.append("]");
+    return super.toString();
+  }
+}
+
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:159)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool.helpJoin(ForkJoinPool.java:1883)
+	java.base/java.util.concurrent.ForkJoinTask.awaitDone(ForkJoinTask.java:440)
+	java.base/java.util.concurrent.ForkJoinTask.join(ForkJoinTask.java:670)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync(Tasks.scala:243)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync$(Tasks.scala:243)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.sync(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:173)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/1028.java

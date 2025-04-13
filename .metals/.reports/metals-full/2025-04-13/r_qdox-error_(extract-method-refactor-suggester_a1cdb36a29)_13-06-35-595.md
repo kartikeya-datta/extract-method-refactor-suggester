@@ -1,0 +1,175 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/3160.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/3160.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/3160.java
+text:
+```scala
+w@@.shutdown();
+
+package org.apache.lucene.index;
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+
+// Make sure if you use NoDeletionPolicy that no file
+// referenced by a commit point is ever deleted
+
+public class TestNeverDelete extends LuceneTestCase {
+
+  public void testIndexing() throws Exception {
+    final File tmpDir = createTempDir("TestNeverDelete");
+    final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
+
+    // We want to "see" files removed if Lucene removed
+    // them.  This is still worth running on Windows since
+    // some files the IR opens and closes.
+    if (d instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)d).setNoDeleteOpenFile(false);
+    }
+    final RandomIndexWriter w = new RandomIndexWriter(random(),
+                                                      d,
+                                                      newIndexWriterConfig(TEST_VERSION_CURRENT,
+                                                                           new MockAnalyzer(random()))
+                                                      .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    w.w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 30));
+
+    w.commit();
+    Thread[] indexThreads = new Thread[random().nextInt(4)];
+    final long stopTime = System.currentTimeMillis() + atLeast(1000);
+    for (int x=0; x < indexThreads.length; x++) {
+      indexThreads[x] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              int docCount = 0;
+              while (System.currentTimeMillis() < stopTime) {
+                final Document doc = new Document();
+                doc.add(newStringField("dc", ""+docCount, Field.Store.YES));
+                doc.add(newTextField("field", "here is some text", Field.Store.YES));
+                w.addDocument(doc);
+
+                if (docCount % 13 == 0) {
+                  w.commit();
+                }
+                docCount++;
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      indexThreads[x].setName("Thread " + x);
+      indexThreads[x].start();
+    }
+
+    final Set<String> allFiles = new HashSet<>();
+
+    DirectoryReader r = DirectoryReader.open(d);
+    while(System.currentTimeMillis() < stopTime) {
+      final IndexCommit ic = r.getIndexCommit();
+      if (VERBOSE) {
+        System.out.println("TEST: check files: " + ic.getFileNames());
+      }
+      allFiles.addAll(ic.getFileNames());
+      // Make sure no old files were removed
+      for(String fileName : allFiles) {
+        assertTrue("file " + fileName + " does not exist", slowFileExists(d, fileName));
+      }
+      DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+      if (r2 != null) {
+        r.close();
+        r = r2;
+      }
+      Thread.sleep(1);
+    }
+    r.close();
+
+    for(Thread t : indexThreads) {
+      t.join();
+    }
+    w.close();
+    d.close();
+
+    TestUtil.rm(tmpDir);
+  }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/3160.java

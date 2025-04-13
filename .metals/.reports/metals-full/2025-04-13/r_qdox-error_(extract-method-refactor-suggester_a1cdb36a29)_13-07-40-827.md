@@ -1,0 +1,193 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7695.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7695.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7695.java
+text:
+```scala
+S@@tagePerformanceTest.class, StageTest.class, TerrainTest.class, TextureDataTest.class, TextureDownloadTest.class,
+
+/*******************************************************************************
+ * Copyright 2011 See AUTHORS file.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
+/*
+ * Copyright 2010 Mario Zechner (contact@badlogicgames.com), Nathan Sweet (admin@esotericsoftware.com)
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS"
+ * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
+
+package com.badlogic.gdx.tests.utils;
+
+import com.badlogic.gdx.tests.*;
+import com.badlogic.gdx.tests.gles2.HelloTriangle;
+import com.badlogic.gdx.tests.gles2.SimpleVertexShader;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/** List of GdxTest classes. To be used by the test launchers. If you write your own test, add it in here!
+ * 
+ * @author badlogicgames@gmail.com */
+public class GdxTests {
+	public static final Class[] tests = {AnimationTest.class, AccelerometerTest.class, ActionTest.class, ActionSequenceTest.class,
+		AlphaTest.class, AtlasIssueTest.class, AssetManagerTest.class, FilterPerformanceTest.class,
+		AudioDeviceTest.class,
+		AudioRecorderTest.class,
+		BitmapFontAlignmentTest.class,
+		BitmapFontFlipTest.class,
+		BitmapFontTest.class,
+		BlitTest.class,
+		BobTest.class,
+		Box2DInitialOverlapTest.class,
+		Box2DTest.class,
+		Box2DTestCollection.class,
+		BufferUtilsTest.class,
+		CompassTest.class,
+		ComplexActionTest.class,
+		CullTest.class,
+		DeltaTimeTest.class,
+		EdgeDetectionTest.class,
+		ETC1Test.class,
+		ExitTest.class,
+		FilesTest.class,
+		// FillrateTest.class,
+		FlickScrollPaneTest.class, FloatTest.class, FrameBufferTest.class, FramebufferToTextureTest.class, FrustumTest.class,
+		FullscreenTest.class, Gdx2DTest.class, GroupFadeTest.class, ImmediateModeRendererTest.class,
+		ImmediateModeRendererAlphaTest.class, IndexBufferObjectClassTest.class, IndexBufferObjectShaderTest.class, InputTest.class,
+		IntegerBitmapFontTest.class, InverseKinematicsTest.class, IsoCamTest.class, IsometricTileTest.class,
+		KinematicBodyTest.class,
+		LifeCycleTest.class,
+		LineDrawingTest.class,
+		ManagedTest.class,
+		ManualBindTest.class,
+		MatrixJNITest.class,
+		MD5Test.class,
+		MeshMultitextureTest.class,
+		MeshShaderTest.class,
+		MeshTest.class,
+		MipMapTest.class,
+		// Mpg123Test.class,
+		MultitouchTest.class, MusicTest.class, MultiTouchActorTest.class, MyFirstTriangle.class, ObjTest.class, OldUITest.class,
+		OnscreenKeyboardTest.class, OrthoCamBorderTest.class, ParallaxTest.class, ParticleEmitterTest.class, PickingTest.class,
+		PixelsPerInchTest.class, PixmapBlendingTest.class, PixmapTest.class, PreferencesTest.class, ProjectiveTextureTest.class,
+		Pong.class, ProjectTest.class, RemoteTest.class, RotationTest.class, ShaderMultitextureTest.class, ShadowMappingTest.class,
+		SplineTest.class, SimpleTest.class, SimpleAnimationTest.class, SimpleDecalTest.class, SimpleStageCullingTest.class,
+		SoundTest.class, SpriteCacheTest.class, SpriteCacheOffsetTest.class, SpriteBatchRotationTest.class,
+		SpriteBatchShaderTest.class, SpriteBatchTest.class, SpritePerformanceTest.class, SpritePerformanteTest2.class,
+		StagePerformanceTest.class,ActorLocalTransformTest.class, StageTest.class, TerrainTest.class, TextureDataTest.class, TextureDownloadTest.class,
+		TextureFormatTest.class, TextureAtlasTest.class, TextInputDialogTest.class, TextureRenderTest.class, TiledMapTest.class,
+		TileTest.class, UITest.class, VBOVATest.class, VertexArrayTest.class, VertexBufferObjectTest.class,
+		VertexArrayClassTest.class, VertexBufferObjectClassTest.class, VertexBufferObjectShaderTest.class, VibratorTest.class,
+		// VorbisTest.class,
+		WaterRipples.class, HelloTriangle.class, SimpleVertexShader.class};
+
+	public static String[] getNames () {
+		List<String> names = new ArrayList<String>();
+		for (Class clazz : tests)
+			names.add(clazz.getSimpleName());
+		Collections.sort(names);
+		return names.toArray(new String[names.size()]);
+	}
+
+	public static GdxTest newTest (String testName) {
+		try {
+			Class clazz = Class.forName("com.badlogic.gdx.tests." + testName);
+			return (GdxTest)clazz.newInstance();
+		} catch (Exception ex) {
+			try {
+				Class clazz = Class.forName("com.badlogic.gdx.tests.gles2." + testName);
+				return (GdxTest)clazz.newInstance();
+			} catch (Exception e) {
+				ex.printStackTrace();
+				return null;
+			}
+		}
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:159)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool.helpJoin(ForkJoinPool.java:1883)
+	java.base/java.util.concurrent.ForkJoinTask.awaitDone(ForkJoinTask.java:440)
+	java.base/java.util.concurrent.ForkJoinTask.join(ForkJoinTask.java:670)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync(Tasks.scala:243)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync$(Tasks.scala:243)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.sync(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:173)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7695.java

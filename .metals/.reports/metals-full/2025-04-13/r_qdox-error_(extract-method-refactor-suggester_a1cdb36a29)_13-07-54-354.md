@@ -1,0 +1,515 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset2/Tasks/7426.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset2/Tasks/7426.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset2/Tasks/7426.java
+text:
+```scala
+r@@eturn this.resolvedType = commonType.capture(scope, this.sourceEnd);
+
+/*******************************************************************************
+ * Copyright (c) 2000, 2005 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
+package org.eclipse.jdt.internal.compiler.ast;
+
+import org.eclipse.jdt.internal.compiler.ASTVisitor;
+import org.eclipse.jdt.internal.compiler.impl.*;
+import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
+import org.eclipse.jdt.internal.compiler.codegen.*;
+import org.eclipse.jdt.internal.compiler.flow.*;
+import org.eclipse.jdt.internal.compiler.lookup.*;
+
+public class ConditionalExpression extends OperatorExpression {
+
+	public Expression condition, valueIfTrue, valueIfFalse;
+	public Constant optimizedBooleanConstant;
+	public Constant optimizedIfTrueConstant;
+	public Constant optimizedIfFalseConstant;
+	
+	// for local variables table attributes
+	int trueInitStateIndex = -1;
+	int falseInitStateIndex = -1;
+	int mergedInitStateIndex = -1;
+	
+	public ConditionalExpression(
+		Expression condition,
+		Expression valueIfTrue,
+		Expression valueIfFalse) {
+		this.condition = condition;
+		this.valueIfTrue = valueIfTrue;
+		this.valueIfFalse = valueIfFalse;
+		sourceStart = condition.sourceStart;
+		sourceEnd = valueIfFalse.sourceEnd;
+	}
+
+	public FlowInfo analyseCode(
+		BlockScope currentScope,
+		FlowContext flowContext,
+		FlowInfo flowInfo) {
+
+		Constant cst = this.condition.optimizedBooleanConstant();
+		boolean isConditionOptimizedTrue = cst != NotAConstant && cst.booleanValue() == true;
+		boolean isConditionOptimizedFalse = cst != NotAConstant && cst.booleanValue() == false;
+
+		int mode = flowInfo.reachMode();
+		flowInfo = condition.analyseCode(currentScope, flowContext, flowInfo, cst == NotAConstant);
+		
+		// process the if-true part
+		FlowInfo trueFlowInfo = flowInfo.initsWhenTrue().copy();
+		if (isConditionOptimizedFalse) {
+			trueFlowInfo.setReachMode(FlowInfo.UNREACHABLE); 
+		}
+		trueInitStateIndex = currentScope.methodScope().recordInitializationStates(trueFlowInfo);
+		trueFlowInfo = valueIfTrue.analyseCode(currentScope, flowContext, trueFlowInfo);
+
+		// process the if-false part
+		FlowInfo falseFlowInfo = flowInfo.initsWhenFalse().copy();
+		if (isConditionOptimizedTrue) {
+			falseFlowInfo.setReachMode(FlowInfo.UNREACHABLE); 
+		}
+		falseInitStateIndex = currentScope.methodScope().recordInitializationStates(falseFlowInfo);
+		falseFlowInfo = valueIfFalse.analyseCode(currentScope, flowContext, falseFlowInfo);
+
+		// merge if-true & if-false initializations
+		FlowInfo mergedInfo;
+		if (isConditionOptimizedTrue){
+			mergedInfo = trueFlowInfo.addPotentialInitializationsFrom(falseFlowInfo);
+		} else if (isConditionOptimizedFalse) {
+			mergedInfo = falseFlowInfo.addPotentialInitializationsFrom(trueFlowInfo);
+		} else {
+			// if ((t && (v = t)) ? t : t && (v = f)) r = v;  -- ok
+			cst = this.optimizedIfTrueConstant;
+			boolean isValueIfTrueOptimizedTrue = cst != null && cst != NotAConstant && cst.booleanValue() == true;
+			boolean isValueIfTrueOptimizedFalse = cst != null && cst != NotAConstant && cst.booleanValue() == false;
+			
+			cst = this.optimizedIfFalseConstant;
+			boolean isValueIfFalseOptimizedTrue = cst != null && cst != NotAConstant && cst.booleanValue() == true;
+			boolean isValueIfFalseOptimizedFalse = cst != null && cst != NotAConstant && cst.booleanValue() == false;
+
+			UnconditionalFlowInfo trueInfoWhenTrue = trueFlowInfo.initsWhenTrue().copy().unconditionalInits();
+			if (isValueIfTrueOptimizedFalse) trueInfoWhenTrue.setReachMode(FlowInfo.UNREACHABLE); 
+
+			UnconditionalFlowInfo falseInfoWhenTrue = falseFlowInfo.initsWhenTrue().copy().unconditionalInits();
+			if (isValueIfFalseOptimizedFalse) falseInfoWhenTrue.setReachMode(FlowInfo.UNREACHABLE); 
+			
+			UnconditionalFlowInfo trueInfoWhenFalse = trueFlowInfo.initsWhenFalse().copy().unconditionalInits();
+			if (isValueIfTrueOptimizedTrue) trueInfoWhenFalse.setReachMode(FlowInfo.UNREACHABLE); 
+
+			UnconditionalFlowInfo falseInfoWhenFalse = falseFlowInfo.initsWhenFalse().copy().unconditionalInits();
+			if (isValueIfFalseOptimizedTrue) falseInfoWhenFalse.setReachMode(FlowInfo.UNREACHABLE); 
+
+			mergedInfo =
+				FlowInfo.conditional(
+					trueInfoWhenTrue.mergedWith(falseInfoWhenTrue),
+					trueInfoWhenFalse.mergedWith(falseInfoWhenFalse));
+		}
+		mergedInitStateIndex =
+			currentScope.methodScope().recordInitializationStates(mergedInfo);
+		mergedInfo.setReachMode(mode);
+		return mergedInfo;
+	}
+
+	/**
+	 * Code generation for the conditional operator ?:
+	 *
+	 * @param currentScope org.eclipse.jdt.internal.compiler.lookup.BlockScope
+	 * @param codeStream org.eclipse.jdt.internal.compiler.codegen.CodeStream
+	 * @param valueRequired boolean
+	*/
+	public void generateCode(
+		BlockScope currentScope,
+		CodeStream codeStream,
+		boolean valueRequired) {
+
+		int pc = codeStream.position;
+		Label endifLabel, falseLabel;
+		if (constant != NotAConstant) {
+			if (valueRequired)
+				codeStream.generateConstant(constant, implicitConversion);
+			codeStream.recordPositionsFrom(pc, this.sourceStart);
+			return;
+		}
+		Constant cst = condition.constant;
+		Constant condCst = condition.optimizedBooleanConstant();
+		boolean needTruePart =
+			!(((cst != NotAConstant) && (cst.booleanValue() == false))
+ ((condCst != NotAConstant) && (condCst.booleanValue() == false)));
+		boolean needFalsePart =
+			!(((cst != NotAConstant) && (cst.booleanValue() == true))
+ ((condCst != NotAConstant) && (condCst.booleanValue() == true)));
+		endifLabel = new Label(codeStream);
+
+		// Generate code for the condition
+		boolean needConditionValue = (cst == NotAConstant) && (condCst == NotAConstant);
+		condition.generateOptimizedBoolean(
+			currentScope,
+			codeStream,
+			null,
+			(falseLabel = new Label(codeStream)),
+			needConditionValue);
+
+		if (trueInitStateIndex != -1) {
+			codeStream.removeNotDefinitelyAssignedVariables(
+				currentScope,
+				trueInitStateIndex);
+			codeStream.addDefinitelyAssignedVariables(currentScope, trueInitStateIndex);
+		}
+		// Then code generation
+		if (needTruePart) {
+			valueIfTrue.generateCode(currentScope, codeStream, valueRequired);
+			if (needFalsePart) {
+				// Jump over the else part
+				int position = codeStream.position;
+				codeStream.goto_(endifLabel);
+				codeStream.updateLastRecordedEndPC(currentScope, position);
+				// Tune codestream stack size
+				if (valueRequired) {
+					codeStream.decrStackSize(this.resolvedType == LongBinding || this.resolvedType == DoubleBinding ? 2 : 1);
+				}
+			}
+		}
+		if (needFalsePart) {
+			falseLabel.place();
+			if (falseInitStateIndex != -1) {
+				codeStream.removeNotDefinitelyAssignedVariables(
+					currentScope,
+					falseInitStateIndex);
+				codeStream.addDefinitelyAssignedVariables(currentScope, falseInitStateIndex);
+			}
+			valueIfFalse.generateCode(currentScope, codeStream, valueRequired);
+			// End of if statement
+			endifLabel.place();
+		}
+		// May loose some local variable initializations : affecting the local variable attributes
+		if (mergedInitStateIndex != -1) {
+			codeStream.removeNotDefinitelyAssignedVariables(
+				currentScope,
+				mergedInitStateIndex);
+		}
+		// implicit conversion
+		if (valueRequired)
+			codeStream.generateImplicitConversion(implicitConversion);
+		codeStream.recordPositionsFrom(pc, this.sourceStart);
+	}
+
+	/**
+	 * Optimized boolean code generation for the conditional operator ?:
+	*/
+	public void generateOptimizedBoolean(
+		BlockScope currentScope,
+		CodeStream codeStream,
+		Label trueLabel,
+		Label falseLabel,
+		boolean valueRequired) {
+
+		if ((constant != Constant.NotAConstant) && (constant.typeID() == T_boolean) // constant
+ ((valueIfTrue.implicitConversion & IMPLICIT_CONVERSION_MASK) >> 4) != T_boolean) { // non boolean values
+			super.generateOptimizedBoolean(currentScope, codeStream, trueLabel, falseLabel, valueRequired);
+			return;
+		}
+		Constant cst = condition.constant;
+		Constant condCst = condition.optimizedBooleanConstant();
+		boolean needTruePart =
+			!(((cst != NotAConstant) && (cst.booleanValue() == false))
+ ((condCst != NotAConstant) && (condCst.booleanValue() == false)));
+		boolean needFalsePart =
+			!(((cst != NotAConstant) && (cst.booleanValue() == true))
+ ((condCst != NotAConstant) && (condCst.booleanValue() == true)));
+
+		Label internalFalseLabel, endifLabel = new Label(codeStream);
+
+		// Generate code for the condition
+		boolean needConditionValue = (cst == NotAConstant) && (condCst == NotAConstant);
+		condition.generateOptimizedBoolean(
+				currentScope,
+				codeStream,
+				null,
+				internalFalseLabel = new Label(codeStream),
+				needConditionValue);
+
+		if (trueInitStateIndex != -1) {
+			codeStream.removeNotDefinitelyAssignedVariables(
+				currentScope,
+				trueInitStateIndex);
+			codeStream.addDefinitelyAssignedVariables(currentScope, trueInitStateIndex);
+		}
+		// Then code generation
+		if (needTruePart) {
+			valueIfTrue.generateOptimizedBoolean(currentScope, codeStream, trueLabel, falseLabel, valueRequired);
+			
+			if (needFalsePart) {
+				// Jump over the else part
+				int position = codeStream.position;
+				codeStream.goto_(endifLabel);
+				codeStream.updateLastRecordedEndPC(currentScope, position);
+				// No need to decrement codestream stack size
+				// since valueIfTrue was already consumed by branch bytecode
+			}
+		}
+		if (needFalsePart) {
+			internalFalseLabel.place();
+			if (falseInitStateIndex != -1) {
+				codeStream.removeNotDefinitelyAssignedVariables(currentScope, falseInitStateIndex);
+				codeStream.addDefinitelyAssignedVariables(currentScope, falseInitStateIndex);
+			}
+			valueIfFalse.generateOptimizedBoolean(currentScope, codeStream, trueLabel, falseLabel, valueRequired);
+
+			// End of if statement
+			endifLabel.place();
+		}
+		// May loose some local variable initializations : affecting the local variable attributes
+		if (mergedInitStateIndex != -1) {
+			codeStream.removeNotDefinitelyAssignedVariables(currentScope, mergedInitStateIndex);
+		}
+		// no implicit conversion for boolean values
+		codeStream.updateLastRecordedEndPC(currentScope, codeStream.position);
+	}
+
+	public Constant optimizedBooleanConstant() {
+
+		return this.optimizedBooleanConstant == null ? this.constant : this.optimizedBooleanConstant;
+	}
+	
+	public StringBuffer printExpressionNoParenthesis(int indent, StringBuffer output) {
+		
+		condition.printExpression(indent, output).append(" ? "); //$NON-NLS-1$
+		valueIfTrue.printExpression(0, output).append(" : "); //$NON-NLS-1$
+		return valueIfFalse.printExpression(0, output);
+	}
+
+	public TypeBinding resolveType(BlockScope scope) {
+		// specs p.368
+		constant = NotAConstant;
+		LookupEnvironment env = scope.environment();
+		boolean use15specifics = env.options.sourceLevel >= ClassFileConstants.JDK1_5;
+		TypeBinding conditionType = condition.resolveTypeExpecting(scope, BooleanBinding);
+		
+		if (valueIfTrue instanceof CastExpression) valueIfTrue.bits |= IgnoreNeedForCastCheckMASK; // will check later on
+		TypeBinding originalValueIfTrueType = valueIfTrue.resolveType(scope);
+
+		if (valueIfFalse instanceof CastExpression) valueIfFalse.bits |= IgnoreNeedForCastCheckMASK; // will check later on
+		TypeBinding originalValueIfFalseType = valueIfFalse.resolveType(scope);
+
+		if (conditionType == null || originalValueIfTrueType == null || originalValueIfFalseType == null)
+			return null;
+
+		TypeBinding valueIfTrueType = originalValueIfTrueType;
+		TypeBinding valueIfFalseType = originalValueIfFalseType;
+		if (use15specifics) {
+			if (valueIfTrueType != valueIfFalseType) {
+				TypeBinding unboxedIfTrueType = valueIfTrueType.isBaseType() ? valueIfTrueType : env.computeBoxingType(valueIfTrueType);
+				TypeBinding unboxedIfFalseType = valueIfFalseType.isBaseType() ? valueIfFalseType : env.computeBoxingType(valueIfFalseType);
+				if (unboxedIfTrueType.isNumericType() && unboxedIfFalseType.isNumericType()) {
+					valueIfTrueType = unboxedIfTrueType;
+					valueIfFalseType = unboxedIfFalseType;
+				} else if (valueIfTrueType.isBaseType()) {
+					if ((valueIfTrueType == NullBinding) == valueIfFalseType.isBaseType()) {  // bool ? null : 12 --> Integer
+						valueIfFalseType = env.computeBoxingType(valueIfFalseType);
+					}
+				} else if (valueIfFalseType.isBaseType()) {
+					if ((valueIfFalseType == NullBinding) == valueIfTrueType.isBaseType()) {  // bool ? 12 : null --> Integer
+						valueIfTrueType = env.computeBoxingType(valueIfTrueType);
+					}
+				}
+			}
+		}
+		// Propagate the constant value from the valueIfTrue and valueIFFalse expression if it is possible
+		Constant condConstant, trueConstant, falseConstant;
+		if ((condConstant = condition.constant) != NotAConstant
+			&& (trueConstant = valueIfTrue.constant) != NotAConstant
+			&& (falseConstant = valueIfFalse.constant) != NotAConstant) {
+			// all terms are constant expression so we can propagate the constant
+			// from valueIFTrue or valueIfFalse to the receiver constant
+			constant = condConstant.booleanValue() ? trueConstant : falseConstant;
+		}
+		if (valueIfTrueType == valueIfFalseType) { // harmed the implicit conversion 
+			valueIfTrue.computeConversion(scope, valueIfTrueType, originalValueIfTrueType);
+			valueIfFalse.computeConversion(scope, valueIfFalseType, originalValueIfFalseType);
+			if (valueIfTrueType == BooleanBinding) {
+				this.optimizedIfTrueConstant = valueIfTrue.optimizedBooleanConstant();
+				this.optimizedIfFalseConstant = valueIfFalse.optimizedBooleanConstant();
+				if (this.optimizedIfTrueConstant != NotAConstant 
+						&& this.optimizedIfFalseConstant != NotAConstant
+						&& this.optimizedIfTrueConstant.booleanValue() == this.optimizedIfFalseConstant.booleanValue()) {
+					// a ? true : true  /   a ? false : false
+					this.optimizedBooleanConstant = optimizedIfTrueConstant;
+				} else if ((condConstant = condition.optimizedBooleanConstant()) != NotAConstant) { // Propagate the optimized boolean constant if possible
+					this.optimizedBooleanConstant = condConstant.booleanValue()
+						? this.optimizedIfTrueConstant
+						: this.optimizedIfFalseConstant;
+				}
+			}
+			return this.resolvedType = valueIfTrueType;
+		}
+		// Determine the return type depending on argument types
+		// Numeric types
+		if (valueIfTrueType.isNumericType() && valueIfFalseType.isNumericType()) {
+			// (Short x Byte) or (Byte x Short)"
+			if ((valueIfTrueType == ByteBinding && valueIfFalseType == ShortBinding)
+ (valueIfTrueType == ShortBinding && valueIfFalseType == ByteBinding)) {
+				valueIfTrue.computeConversion(scope, ShortBinding, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, ShortBinding, originalValueIfFalseType);
+				return this.resolvedType = ShortBinding;
+			}
+			// <Byte|Short|Char> x constant(Int)  ---> <Byte|Short|Char>   and reciprocally
+			if ((valueIfTrueType == ByteBinding || valueIfTrueType == ShortBinding || valueIfTrueType == CharBinding)
+					&& (valueIfFalseType == IntBinding
+						&& valueIfFalse.isConstantValueOfTypeAssignableToType(valueIfFalseType, valueIfTrueType))) {
+				valueIfTrue.computeConversion(scope, valueIfTrueType, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, valueIfTrueType, originalValueIfFalseType);
+				return this.resolvedType = valueIfTrueType;
+			}
+			if ((valueIfFalseType == ByteBinding
+ valueIfFalseType == ShortBinding
+ valueIfFalseType == CharBinding)
+					&& (valueIfTrueType == IntBinding
+						&& valueIfTrue.isConstantValueOfTypeAssignableToType(valueIfTrueType, valueIfFalseType))) {
+				valueIfTrue.computeConversion(scope, valueIfFalseType, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, valueIfFalseType, originalValueIfFalseType);
+				return this.resolvedType = valueIfFalseType;
+			}
+			// Manual binary numeric promotion
+			// int
+			if (BaseTypeBinding.isNarrowing(valueIfTrueType.id, T_int)
+					&& BaseTypeBinding.isNarrowing(valueIfFalseType.id, T_int)) {
+				valueIfTrue.computeConversion(scope, IntBinding, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, IntBinding, originalValueIfFalseType);
+				return this.resolvedType = IntBinding;
+			}
+			// long
+			if (BaseTypeBinding.isNarrowing(valueIfTrueType.id, T_long)
+					&& BaseTypeBinding.isNarrowing(valueIfFalseType.id, T_long)) {
+				valueIfTrue.computeConversion(scope, LongBinding, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, LongBinding, originalValueIfFalseType);
+				return this.resolvedType = LongBinding;
+			}
+			// float
+			if (BaseTypeBinding.isNarrowing(valueIfTrueType.id, T_float)
+					&& BaseTypeBinding.isNarrowing(valueIfFalseType.id, T_float)) {
+				valueIfTrue.computeConversion(scope, FloatBinding, originalValueIfTrueType);
+				valueIfFalse.computeConversion(scope, FloatBinding, originalValueIfFalseType);
+				return this.resolvedType = FloatBinding;
+			}
+			// double
+			valueIfTrue.computeConversion(scope, DoubleBinding, originalValueIfTrueType);
+			valueIfFalse.computeConversion(scope, DoubleBinding, originalValueIfFalseType);
+			return this.resolvedType = DoubleBinding;
+		}
+		// Type references (null null is already tested)
+		if ((valueIfTrueType.isBaseType() && valueIfTrueType != NullBinding)
+ (valueIfFalseType.isBaseType() && valueIfFalseType != NullBinding)) {
+			scope.problemReporter().conditionalArgumentsIncompatibleTypes(
+				this,
+				valueIfTrueType,
+				valueIfFalseType);
+			return null;
+		}
+		if (valueIfFalseType.isCompatibleWith(valueIfTrueType)) {
+			valueIfTrue.computeConversion(scope, valueIfTrueType, originalValueIfTrueType);
+			valueIfFalse.computeConversion(scope, valueIfTrueType, originalValueIfFalseType);
+			return this.resolvedType = valueIfTrueType;
+		}
+		if (valueIfTrueType.isCompatibleWith(valueIfFalseType)) {
+			valueIfTrue.computeConversion(scope, valueIfFalseType, originalValueIfTrueType);
+			valueIfFalse.computeConversion(scope, valueIfFalseType, originalValueIfFalseType);
+			return this.resolvedType = valueIfFalseType;
+		}
+		// 1.5 addition: allow most common supertype 
+		if (use15specifics) {
+			TypeBinding commonType = scope.lowerUpperBound(new TypeBinding[] { valueIfTrueType, valueIfFalseType });
+			if (commonType != null) {
+				valueIfTrue.computeConversion(scope, commonType, valueIfTrueType);
+				valueIfFalse.computeConversion(scope, commonType, valueIfFalseType);
+				return this.resolvedType = commonType.capture();
+			}
+		}
+		scope.problemReporter().conditionalArgumentsIncompatibleTypes(
+			this,
+			valueIfTrueType,
+			valueIfFalseType);
+		return null;
+	}
+	
+	public void traverse(ASTVisitor visitor, BlockScope scope) {
+		if (visitor.visit(this, scope)) {
+			condition.traverse(visitor, scope);
+			valueIfTrue.traverse(visitor, scope);
+			valueIfFalse.traverse(visitor, scope);
+		}
+		visitor.endVisit(this, scope);
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool.helpJoin(ForkJoinPool.java:1883)
+	java.base/java.util.concurrent.ForkJoinTask.awaitDone(ForkJoinTask.java:440)
+	java.base/java.util.concurrent.ForkJoinTask.join(ForkJoinTask.java:670)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync(Tasks.scala:243)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync$(Tasks.scala:243)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.sync(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:173)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset2/Tasks/7426.java

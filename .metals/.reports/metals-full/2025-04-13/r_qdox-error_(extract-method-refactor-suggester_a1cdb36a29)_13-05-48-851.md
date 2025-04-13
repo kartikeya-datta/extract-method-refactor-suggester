@@ -1,0 +1,254 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/7071.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/7071.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/7071.java
+text:
+```scala
+s@@etTitle(JMeterUtils.getResString("function_helper_title")); //$NON-NLS-1$
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package org.apache.jmeter.functions.gui;
+
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JRootPane;
+import javax.swing.KeyStroke;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import org.apache.jmeter.config.Argument;
+import org.apache.jmeter.config.Arguments;
+import org.apache.jmeter.config.gui.ArgumentsPanel;
+import org.apache.jmeter.engine.util.CompoundVariable;
+import org.apache.jmeter.functions.Function;
+import org.apache.jmeter.gui.action.ActionRouter;
+import org.apache.jmeter.gui.action.Help;
+import org.apache.jmeter.gui.action.KeyStrokes;
+import org.apache.jmeter.testelement.property.PropertyIterator;
+import org.apache.jmeter.util.JMeterUtils;
+import org.apache.jmeter.util.LocaleChangeEvent;
+import org.apache.jmeter.util.LocaleChangeListener;
+import org.apache.jorphan.gui.ComponentUtil;
+import org.apache.jorphan.gui.JLabeledChoice;
+import org.apache.jorphan.gui.JLabeledTextField;
+
+public class FunctionHelper extends JDialog implements ActionListener, ChangeListener, LocaleChangeListener {
+    private static final long serialVersionUID = 240L;
+
+    private JLabeledChoice functionList;
+
+    private ArgumentsPanel parameterPanel;
+
+    private JLabeledTextField cutPasteFunction;
+
+    public FunctionHelper() {
+        super((JFrame) null, JMeterUtils.getResString("function_helper_title"), false); //$NON-NLS-1$
+        init();
+        JMeterUtils.addLocaleChangeListener(this);
+    }
+    
+    /**
+     * Allow Dialog to be closed by ESC key
+     */
+    @Override
+    protected JRootPane createRootPane() {
+        JRootPane rootPane = new JRootPane();
+        KeyStroke stroke = KeyStrokes.ESC;
+        javax.swing.Action escapeAction = new AbstractAction("ESCAPE") { 
+            /**
+             * 
+             */
+            private static final long serialVersionUID = -4036804004190858925L;
+
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) { 
+                setVisible(false);
+            } 
+        };
+        rootPane.getActionMap().put(escapeAction.getValue(Action.NAME), escapeAction);
+        InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        inputMap.put(stroke, escapeAction.getValue(Action.NAME));
+        return rootPane;
+    }
+    
+    private void init() {
+        parameterPanel = new ArgumentsPanel(JMeterUtils.getResString("function_params"), false); //$NON-NLS-1$
+        initializeFunctionList();
+        this.getContentPane().setLayout(new BorderLayout(10, 10));
+        JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        comboPanel.add(functionList);
+        JButton helpButton = new JButton(JMeterUtils.getResString("help")); //$NON-NLS-1$
+        helpButton.addActionListener(new HelpListener());
+        comboPanel.add(helpButton);
+        this.getContentPane().add(comboPanel, BorderLayout.NORTH);
+        this.getContentPane().add(parameterPanel, BorderLayout.CENTER);
+        JPanel resultsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        cutPasteFunction = new JLabeledTextField(JMeterUtils.getResString("cut_paste_function"), 35); //$NON-NLS-1$
+        resultsPanel.add(cutPasteFunction);
+        JButton generateButton = new JButton(JMeterUtils.getResString("generate")); //$NON-NLS-1$
+        generateButton.addActionListener(this);
+        resultsPanel.add(generateButton);
+        this.getContentPane().add(resultsPanel, BorderLayout.SOUTH);
+        
+        this.pack();
+        ComponentUtil.centerComponentInWindow(this);
+    }
+
+    private void initializeFunctionList() {
+        String[] functionNames = CompoundVariable.getFunctionNames();
+        Arrays.sort(functionNames, new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return o1.compareToIgnoreCase(o2);
+            }
+        });
+        functionList = new JLabeledChoice(JMeterUtils.getResString("choose_function"), functionNames); //$NON-NLS-1$
+        functionList.addChangeListener(this);
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent event) {
+        try {
+            Arguments args = new Arguments();
+            Function function = CompoundVariable.getFunctionClass(functionList.getText()).newInstance();
+            List<String> argumentDesc = function.getArgumentDesc();
+            for (String help : argumentDesc) {
+                args.addArgument(help, ""); //$NON-NLS-1$
+            }
+            parameterPanel.configure(args);
+            parameterPanel.revalidate();
+            getContentPane().remove(parameterPanel);
+            this.pack();
+            getContentPane().add(parameterPanel, BorderLayout.CENTER);
+            this.pack();
+            this.validate();
+            this.repaint();
+        } catch (InstantiationException e) {
+        } catch (IllegalAccessException e) {
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        StringBuilder functionCall = new StringBuilder("${");
+        functionCall.append(functionList.getText());
+        Arguments args = (Arguments) parameterPanel.createTestElement();
+        if (args.getArguments().size() > 0) {
+            functionCall.append("(");
+            PropertyIterator iter = args.iterator();
+            boolean first = true;
+            while (iter.hasNext()) {
+                Argument arg = (Argument) iter.next().getObjectValue();
+                if (!first) {
+                    functionCall.append(",");
+                }
+                functionCall.append(arg.getValue());
+                first = false;
+            }
+            functionCall.append(")");
+        }
+        functionCall.append("}");
+        cutPasteFunction.setText(functionCall.toString());
+    }
+
+    private class HelpListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String[] source = new String[] { Help.HELP_FUNCTIONS, functionList.getText() };
+            ActionEvent helpEvent = new ActionEvent(source, e.getID(), "help"); //$NON-NLS-1$
+            ActionRouter.getInstance().actionPerformed(helpEvent);
+        }
+    }
+
+    @Override
+    public void localeChanged(LocaleChangeEvent event) {
+        setTitle(JMeterUtils.getResString("function_helper_title"));
+        this.getContentPane().removeAll(); // so we can add them again in init
+        init();
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/7071.java

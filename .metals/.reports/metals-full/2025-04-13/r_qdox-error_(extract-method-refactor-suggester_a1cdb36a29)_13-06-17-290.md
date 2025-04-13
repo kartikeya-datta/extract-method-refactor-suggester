@@ -1,0 +1,328 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/8551.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/8551.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,7]
+
+error in qdox parser
+file content:
+```java
+offset: 7
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/8551.java
+text:
+```scala
+final S@@tring variation = owner.getVariation();
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.wicket.markup.html.border;
+
+import java.io.IOException;
+import java.util.Locale;
+
+import org.apache.wicket.Application;
+import org.apache.wicket.Component;
+import org.apache.wicket.MarkupContainer;
+import org.apache.wicket.WicketRuntimeException;
+import org.apache.wicket.behavior.AbstractBehavior;
+import org.apache.wicket.markup.ContainerInfo;
+import org.apache.wicket.markup.IMarkupFragment;
+import org.apache.wicket.markup.MarkupElement;
+import org.apache.wicket.markup.MarkupFactory;
+import org.apache.wicket.markup.MarkupResourceStream;
+import org.apache.wicket.markup.MarkupStream;
+import org.apache.wicket.markup.WicketTag;
+import org.apache.wicket.markup.parser.filter.WicketTagIdentifier;
+import org.apache.wicket.request.Response;
+import org.apache.wicket.util.resource.IResourceStream;
+import org.apache.wicket.util.resource.locator.IResourceStreamLocator;
+
+/**
+ * This is a behavior implementation that can be used if you have markup that should be around a
+ * component. It works just like {@link Border} so you have to have a <wicket:border>HTML
+ * before<wicket:body/>HTML after</wicket:border> in the html of your subclass.
+ * 
+ * @author jcompagner
+ */
+public class MarkupComponentBorder extends AbstractBehavior
+{
+	static
+	{
+		// register "wicket:border" and "wicket:body"
+		WicketTagIdentifier.registerWellKnownTagName(Border.BORDER);
+		WicketTagIdentifier.registerWellKnownTagName(Border.BODY);
+	}
+
+	private static final long serialVersionUID = 1L;
+
+	// markup stream associated with this border. bonus of keeping a reference
+	// is that when renderAfter starts the stream will be very close to its
+	// needed position because renderBefore has executed
+	private transient MarkupStream markupStream;
+
+	/**
+	 * @see org.apache.wicket.behavior.AbstractBehavior#beforeRender(org.apache.wicket.Component)
+	 */
+	@Override
+	public void beforeRender(final Component component)
+	{
+		final MarkupStream stream = getMarkupStream(component);
+		final Response response = component.getResponse();
+		stream.setCurrentIndex(0);
+
+		boolean insideBorderMarkup = false;
+		while (stream.hasMore())
+		{
+			MarkupElement e = stream.get();
+			stream.next();
+			if (e instanceof WicketTag)
+			{
+				WicketTag wt = (WicketTag)e;
+				if (!insideBorderMarkup)
+				{
+					if (wt.isBorderTag() && wt.isOpen())
+					{
+						insideBorderMarkup = true;
+						continue;
+					}
+					else
+					{
+						throw new WicketRuntimeException(
+							"Unexpected tag encountered in markup of component border " +
+								getClass().getName() + ". Tag: " + wt.toString() +
+								", expected tag: <wicket:border>");
+					}
+				}
+				else
+				{
+					if (wt.isBodyTag())
+					{
+						break;
+					}
+					else
+					{
+						throw new WicketRuntimeException(
+							"Unexpected tag encountered in markup of component border " +
+								getClass().getName() + ". Tag: " + wt.toString() +
+								", expected tag: <wicket:body> or </wicket:body>");
+					}
+				}
+			}
+			if (insideBorderMarkup)
+			{
+				response.write(e.toCharSequence());
+			}
+		}
+
+		if (!stream.hasMore())
+		{
+			throw new WicketRuntimeException("Markup for component border " + getClass().getName() +
+				" ended prematurely, was expecting </wicket:border>");
+		}
+	}
+
+	/**
+	 * @see org.apache.wicket.behavior.AbstractBehavior#onRendered(org.apache.wicket.Component)
+	 */
+	@Override
+	public void onRendered(final Component component)
+	{
+		final MarkupStream stream = getMarkupStream(component);
+		final Response response = component.getResponse();
+
+		while (stream.hasMore())
+		{
+			MarkupElement e = stream.get();
+			stream.next();
+			if (e instanceof WicketTag)
+			{
+				WicketTag wt = (WicketTag)e;
+				if (wt.isBorderTag() && wt.isClose())
+				{
+					break;
+				}
+				else
+				{
+					throw new WicketRuntimeException(
+						"Unexpected tag encountered in markup of component border " +
+							getClass().getName() + ". Tag: " + wt.toString() +
+							", expected tag: </wicket:border>");
+				}
+			}
+			response.write(e.toCharSequence());
+		}
+	}
+
+	/**
+	 * 
+	 * @param component
+	 * @return markup stream
+	 */
+	private MarkupStream getMarkupStream(final Component component)
+	{
+		if (markupStream == null)
+		{
+			markupStream = findMarkupStream(component);
+		}
+		return markupStream;
+	}
+
+	/**
+	 * 
+	 * @param owner
+	 * @return markup stream
+	 */
+	private MarkupStream findMarkupStream(final Component owner)
+	{
+		final String markupType = getMarkupType(owner);
+
+		// TODO we need to expose this functionality for any class not just for
+		// markupcontainers in markupcache so we don't have to replicate this
+		// logic here
+
+		// Get locator to search for the resource
+		final IResourceStreamLocator locator = Application.get()
+			.getResourceSettings()
+			.getResourceStreamLocator();
+
+		final String style = owner.getStyle();
+		final String variation = (owner == null ? null : owner.getVariation());
+		final Locale locale = owner.getLocale();
+
+		MarkupResourceStream markupResourceStream = null;
+		Class<?> containerClass = getClass();
+
+		while (!(containerClass.equals(MarkupComponentBorder.class)))
+		{
+			String path = containerClass.getName().replace('.', '/');
+			IResourceStream resourceStream = locator.locate(containerClass, path, style, variation,
+				locale, markupType);
+
+			// Did we find it already?
+			if (resourceStream != null)
+			{
+				ContainerInfo ci = new ContainerInfo(containerClass, locale, style, variation,
+					markupType);
+				markupResourceStream = new MarkupResourceStream(resourceStream, ci, containerClass);
+				break;
+			}
+
+			// Walk up the class hierarchy one level, if markup has not
+			// yet been found
+			containerClass = containerClass.getSuperclass();
+		}
+
+		if (markupResourceStream == null)
+		{
+			throw new WicketRuntimeException("Could not find markup for component border `" +
+				getClass().getName() + "`");
+		}
+
+		try
+		{
+			IMarkupFragment markup = MarkupFactory.get()
+				.newMarkupParser(markupResourceStream)
+				.parse();
+
+			return new MarkupStream(markup);
+		}
+		catch (Exception e)
+		{
+			throw new WicketRuntimeException(
+				"Could not parse markup from markup resource stream: " +
+					markupResourceStream.toString());
+		}
+		finally
+		{
+			try
+			{
+				markupResourceStream.close();
+			}
+			catch (IOException e)
+			{
+				throw new WicketRuntimeException("Cannot close markup resource stream: " +
+					markupResourceStream, e);
+			}
+		}
+	}
+
+	/**
+	 * 
+	 * @param component
+	 * @return markup type
+	 */
+	private String getMarkupType(Component component)
+	{
+		String extension;
+		if (component instanceof MarkupContainer)
+		{
+			extension = ((MarkupContainer)component).getMarkupType().getExtension();
+		}
+		else
+		{
+			extension = component.getParent().getMarkupType().getExtension();
+		}
+		return extension;
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/8551.java

@@ -1,0 +1,210 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3382.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3382.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3382.java
+text:
+```scala
+.@@field("_content", bytes)
+
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.elasticsearch.index.mapper.xcontent;
+
+import org.elasticsearch.common.Base64;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.Index;
+import org.elasticsearch.index.analysis.AnalysisService;
+import org.elasticsearch.index.mapper.DocumentMapper;
+import org.elasticsearch.index.mapper.DocumentMapperParser;
+import org.elasticsearch.index.mapper.MapperService;
+import org.elasticsearch.index.mapper.ParsedDocument;
+import org.elasticsearch.index.mapper.attachment.AttachmentMapper;
+import org.elasticsearch.index.mapper.core.DateFieldMapper;
+import org.elasticsearch.index.mapper.core.StringFieldMapper;
+import org.elasticsearch.test.ElasticsearchTestCase;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.elasticsearch.common.io.Streams.copyToStringFromClasspath;
+import static org.hamcrest.Matchers.*;
+
+/**
+ *
+ */
+public class MultifieldAttachmentMapperTests extends ElasticsearchTestCase {
+
+    private DocumentMapperParser mapperParser;
+
+    @Before
+    public void setupMapperParser() {
+        mapperParser = new DocumentMapperParser(new Index("test"), ImmutableSettings.EMPTY, new AnalysisService(new Index("test")), null, null, null, null);
+        mapperParser.putTypeParser(AttachmentMapper.CONTENT_TYPE, new AttachmentMapper.TypeParser());
+    }
+
+    @Test
+    public void testSimpleMappings() throws Exception {
+        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/multifield/multifield-mapping.json");
+        DocumentMapper docMapper = mapperParser.parse(mapping);
+
+
+        assertThat(docMapper.mappers().fullName("file").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.suggest").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.date").mapper(), instanceOf(DateFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.date.string").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.title").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.title.suggest").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.name").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.name.suggest").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.author").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.author.suggest").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.keywords").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.keywords.suggest").mapper(), instanceOf(StringFieldMapper.class));
+
+        assertThat(docMapper.mappers().fullName("file.content_type").mapper(), instanceOf(StringFieldMapper.class));
+        assertThat(docMapper.mappers().fullName("file.content_type.suggest").mapper(), instanceOf(StringFieldMapper.class));
+    }
+
+    @Test
+    public void testExternalValues() throws Exception {
+        String originalText = "This is an elasticsearch mapper attachment test.";
+        String contentType = "text/plain; charset=ISO-8859-1";
+        String forcedName = "dummyname.txt";
+
+        String bytes = Base64.encodeBytes(originalText.getBytes());
+
+        MapperService mapperService = MapperTestUtils.newMapperService();
+        mapperService.documentMapperParser().putTypeParser(AttachmentMapper.CONTENT_TYPE, new AttachmentMapper.TypeParser());
+
+        String mapping = copyToStringFromClasspath("/org/elasticsearch/index/mapper/multifield/multifield-mapping.json");
+
+        DocumentMapper documentMapper = mapperService.documentMapperParser().parse(mapping);
+
+        ParsedDocument doc = documentMapper.parse("person", "1", XContentFactory.jsonBuilder()
+                .startObject()
+                    .field("file", bytes)
+                .endObject()
+                .bytes());
+
+        assertThat(doc.rootDoc().getField("file"), notNullValue());
+        assertThat(doc.rootDoc().getField("file").stringValue(), is(originalText + "\n"));
+
+        assertThat(doc.rootDoc().getField("file.content_type"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_type").stringValue(), is(contentType));
+        assertThat(doc.rootDoc().getField("file.content_type.suggest"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_type.suggest").stringValue(), is(contentType));
+        assertThat(doc.rootDoc().getField("file.content_length"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_length").numericValue().intValue(), is(originalText.length()));
+
+        assertThat(doc.rootDoc().getField("file.suggest"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.suggest").stringValue(), is(originalText + "\n"));
+
+        // Let's force some values
+        doc = documentMapper.parse("person", "1", XContentFactory.jsonBuilder()
+                .startObject()
+                    .startObject("file")
+                        .field("content", bytes)
+                        .field("_name", forcedName)
+                    .endObject()
+                .endObject()
+                .bytes());
+
+        assertThat(doc.rootDoc().getField("file"), notNullValue());
+        assertThat(doc.rootDoc().getField("file").stringValue(), is(originalText + "\n"));
+
+        assertThat(doc.rootDoc().getField("file.content_type"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_type").stringValue(), is(contentType));
+        assertThat(doc.rootDoc().getField("file.content_type.suggest"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_type.suggest").stringValue(), is(contentType));
+        assertThat(doc.rootDoc().getField("file.content_length"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.content_length").numericValue().intValue(), is(originalText.length()));
+
+        assertThat(doc.rootDoc().getField("file.suggest"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.suggest").stringValue(), is(originalText + "\n"));
+
+        assertThat(doc.rootDoc().getField("file.name"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.name").stringValue(), is(forcedName));
+        // In mapping we have default store:false
+        assertThat(doc.rootDoc().getField("file.name").fieldType().stored(), is(false));
+        assertThat(doc.rootDoc().getField("file.name.suggest"), notNullValue());
+        assertThat(doc.rootDoc().getField("file.name.suggest").stringValue(), is(forcedName));
+        // In mapping we set store:true for suggest subfield
+        assertThat(doc.rootDoc().getField("file.name.suggest").fieldType().stored(), is(true));
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3382.java

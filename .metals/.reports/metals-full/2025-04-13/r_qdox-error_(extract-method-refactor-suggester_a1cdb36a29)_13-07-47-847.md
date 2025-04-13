@@ -1,0 +1,417 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/8704.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/8704.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/8704.java
+text:
+```scala
+a@@ssertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("5m").setWaitForGreenStatus().execute().actionGet().isTimedOut(), equalTo(false));
+
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.elasticsearch.recovery;
+
+import com.google.common.base.Predicate;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
+import org.elasticsearch.action.admin.indices.stats.ShardStats;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.common.Priority;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
+import org.elasticsearch.index.shard.DocsStats;
+import org.elasticsearch.test.BackgroundIndexer;
+import org.elasticsearch.test.ElasticsearchIntegrationTest;
+import org.elasticsearch.test.junit.annotations.TestLogging;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_REPLICAS;
+import static org.elasticsearch.cluster.metadata.IndexMetaData.SETTING_NUMBER_OF_SHARDS;
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.*;
+import static org.hamcrest.Matchers.equalTo;
+
+public class RecoveryWhileUnderLoadTests extends ElasticsearchIntegrationTest {
+
+    private final ESLogger logger = Loggers.getLogger(RecoveryWhileUnderLoadTests.class);
+
+    @Test
+    @TestLogging("action.search.type:TRACE,action.admin.indices.refresh:TRACE")
+    @Slow
+    public void recoverWhileUnderLoadAllocateBackupsTest() throws Exception {
+        logger.info("--> creating test index ...");
+        int numberOfShards = numberOfShards();
+        assertAcked(prepareCreate("test", 1, settingsBuilder().put(SETTING_NUMBER_OF_SHARDS, numberOfShards).put(SETTING_NUMBER_OF_REPLICAS, 1)));
+
+        final int totalNumDocs = scaledRandomIntBetween(200, 20000);
+        int waitFor = totalNumDocs / 10;
+        int extraDocs = waitFor;
+        try (BackgroundIndexer indexer = new BackgroundIndexer("test", "type", client(), extraDocs)) {
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            extraDocs = totalNumDocs / 10;
+            waitFor += extraDocs;
+            indexer.continueIndexing(extraDocs);
+            logger.info("--> flushing the index ....");
+            // now flush, just to make sure we have some data in the index, not just translog
+            client().admin().indices().prepareFlush().execute().actionGet();
+
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            extraDocs = totalNumDocs - waitFor;
+            indexer.continueIndexing(extraDocs);
+
+            logger.info("--> allow 2 nodes for index [test] ...");
+            // now start another node, while we index
+            allowNodes("test", 2);
+
+            logger.info("--> waiting for GREEN health status ...");
+            // make sure the cluster state is green, and all has been recovered
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().setWaitForNodes(">=2").execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> waiting for {} docs to be indexed ...", totalNumDocs);
+            waitForDocs(totalNumDocs, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", totalNumDocs);
+
+            logger.info("--> marking and waiting for indexing threads to stop ...");
+            indexer.stop();
+            logger.info("--> indexing threads stopped");
+
+            logger.info("--> refreshing the index");
+            refreshAndAssert();
+            logger.info("--> verifying indexed content");
+            iterateAssertCount(numberOfShards, indexer.totalIndexedDocs(), 10);
+        }
+    }
+
+    @Test
+    @TestLogging("action.search.type:TRACE,action.admin.indices.refresh:TRACE")
+    @Slow
+    public void recoverWhileUnderLoadAllocateBackupsRelocatePrimariesTest() throws Exception {
+        logger.info("--> creating test index ...");
+        int numberOfShards = numberOfShards();
+        assertAcked(prepareCreate("test", 1, settingsBuilder().put(SETTING_NUMBER_OF_SHARDS, numberOfShards).put(SETTING_NUMBER_OF_REPLICAS, 1)));
+
+        final int totalNumDocs = scaledRandomIntBetween(200, 20000);
+        int waitFor = totalNumDocs / 10;
+        int extraDocs = waitFor;
+        try (BackgroundIndexer indexer = new BackgroundIndexer("test", "type", client(), extraDocs)) {
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            extraDocs = totalNumDocs / 10;
+            waitFor += extraDocs;
+            indexer.continueIndexing(extraDocs);
+            logger.info("--> flushing the index ....");
+            // now flush, just to make sure we have some data in the index, not just translog
+            client().admin().indices().prepareFlush().execute().actionGet();
+
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            extraDocs = totalNumDocs - waitFor;
+            indexer.continueIndexing(extraDocs);
+            logger.info("--> allow 4 nodes for index [test] ...");
+            allowNodes("test", 4);
+
+            logger.info("--> waiting for GREEN health status ...");
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().setWaitForNodes(">=4").execute().actionGet().isTimedOut(), equalTo(false));
+
+
+            logger.info("--> waiting for {} docs to be indexed ...", totalNumDocs);
+            waitForDocs(totalNumDocs, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", totalNumDocs);
+
+            logger.info("--> marking and waiting for indexing threads to stop ...");
+            indexer.stop();
+            logger.info("--> indexing threads stopped");
+
+            logger.info("--> refreshing the index");
+            refreshAndAssert();
+            logger.info("--> verifying indexed content");
+            iterateAssertCount(numberOfShards, indexer.totalIndexedDocs(), 10);
+        }
+    }
+
+    @Test
+    @TestLogging("action.search.type:TRACE,action.admin.indices.refresh:TRACE")
+    @Slow
+    public void recoverWhileUnderLoadWithNodeShutdown() throws Exception {
+        logger.info("--> creating test index ...");
+        int numberOfShards = numberOfShards();
+        assertAcked(prepareCreate("test", 2, settingsBuilder().put(SETTING_NUMBER_OF_SHARDS, numberOfShards).put(SETTING_NUMBER_OF_REPLICAS, 1)));
+
+        final int totalNumDocs = scaledRandomIntBetween(200, 20000);
+        int waitFor = totalNumDocs / 10;
+        int extraDocs = waitFor;
+        try (BackgroundIndexer indexer = new BackgroundIndexer("test", "type", client(), extraDocs)) {
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            extraDocs = totalNumDocs / 10;
+            waitFor += extraDocs;
+            indexer.continueIndexing(extraDocs);
+            logger.info("--> flushing the index ....");
+            // now flush, just to make sure we have some data in the index, not just translog
+            client().admin().indices().prepareFlush().execute().actionGet();
+
+            logger.info("--> waiting for {} docs to be indexed ...", waitFor);
+            waitForDocs(waitFor, indexer);
+            indexer.assertNoFailures();
+            logger.info("--> {} docs indexed", waitFor);
+
+            // now start more nodes, while we index
+            extraDocs = totalNumDocs - waitFor;
+            indexer.continueIndexing(extraDocs);
+            logger.info("--> allow 4 nodes for index [test] ...");
+            allowNodes("test", 4);
+
+            logger.info("--> waiting for GREEN health status ...");
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().setWaitForNodes(">=4").execute().actionGet().isTimedOut(), equalTo(false));
+
+
+            logger.info("--> waiting for {} docs to be indexed ...", totalNumDocs);
+            waitForDocs(totalNumDocs, indexer);
+            indexer.assertNoFailures();
+
+            logger.info("--> {} docs indexed", totalNumDocs);
+            // now, shutdown nodes
+            logger.info("--> allow 3 nodes for index [test] ...");
+            allowNodes("test", 3);
+            logger.info("--> waiting for GREEN health status ...");
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().setWaitForNodes(">=3").execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> allow 2 nodes for index [test] ...");
+            allowNodes("test", 2);
+            logger.info("--> waiting for GREEN health status ...");
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().setWaitForNodes(">=2").execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> allow 1 nodes for index [test] ...");
+            allowNodes("test", 1);
+            logger.info("--> waiting for YELLOW health status ...");
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForYellowStatus().setWaitForNodes(">=1").execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> marking and waiting for indexing threads to stop ...");
+            indexer.stop();
+            logger.info("--> indexing threads stopped");
+
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForYellowStatus().setWaitForNodes(">=1").execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> refreshing the index");
+            refreshAndAssert();
+            logger.info("--> verifying indexed content");
+            iterateAssertCount(numberOfShards, indexer.totalIndexedDocs(), 10);
+        }
+    }
+
+    @Test
+    @TestLogging("action.search.type:TRACE,action.admin.indices.refresh:TRACE,action.index:TRACE,action.support.replication:TRACE,cluster.service:DEBUG")
+    @Slow
+    public void recoverWhileRelocating() throws Exception {
+        final int numShards = between(2, 10);
+        final int numReplicas = 0;
+        logger.info("--> creating test index ...");
+        int allowNodes = 2;
+        assertAcked(prepareCreate("test", 3, settingsBuilder().put(SETTING_NUMBER_OF_SHARDS, numShards).put(SETTING_NUMBER_OF_REPLICAS, numReplicas)));
+
+        final int numDocs = scaledRandomIntBetween(200, 50000);
+
+        try (BackgroundIndexer indexer = new BackgroundIndexer("test", "type", client(), numDocs)) {
+
+            for (int i = 0; i < numDocs; i += scaledRandomIntBetween(100, Math.min(1000, numDocs))) {
+                indexer.assertNoFailures();
+                logger.info("--> waiting for {} docs to be indexed ...", i);
+                waitForDocs(i, indexer);
+                logger.info("--> {} docs indexed", i);
+                allowNodes = 2 / allowNodes;
+                allowNodes("test", allowNodes);
+                logger.info("--> waiting for GREEN health status ...");
+                assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().execute().actionGet().isTimedOut(), equalTo(false));
+            }
+
+            logger.info("--> marking and waiting for indexing threads to stop ...");
+            indexer.stop();
+
+            logger.info("--> indexing threads stopped");
+            logger.info("--> bump up number of replicas to 1 and allow all nodes to hold the index");
+            allowNodes("test", 3);
+            assertAcked(client().admin().indices().prepareUpdateSettings("test").setSettings(settingsBuilder().put("number_of_replicas", 1)).get());
+            assertThat(client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setTimeout("1m").setWaitForGreenStatus().execute().actionGet().isTimedOut(), equalTo(false));
+
+            logger.info("--> refreshing the index");
+            refreshAndAssert();
+            logger.info("--> verifying indexed content");
+            iterateAssertCount(numShards, indexer.totalIndexedDocs(), 10);
+        }
+    }
+
+    private void iterateAssertCount(final int numberOfShards, final long numberOfDocs, final int iterations) throws Exception {
+        SearchResponse[] iterationResults = new SearchResponse[iterations];
+        boolean error = false;
+        for (int i = 0; i < iterations; i++) {
+            SearchResponse searchResponse = client().prepareSearch().setSearchType(SearchType.COUNT).setQuery(matchAllQuery()).get();
+            logSearchResponse(numberOfShards, numberOfDocs, i, searchResponse);
+            iterationResults[i] = searchResponse;
+            if (searchResponse.getHits().totalHits() != numberOfDocs) {
+                error = true;
+            }
+        }
+
+        if (error) {
+            //Printing out shards and their doc count
+            IndicesStatsResponse indicesStatsResponse = client().admin().indices().prepareStats().get();
+            for (ShardStats shardStats : indicesStatsResponse.getShards()) {
+                DocsStats docsStats = shardStats.getStats().docs;
+                logger.info("shard [{}] - count {}, primary {}", shardStats.getShardId(), docsStats.getCount(), shardStats.getShardRouting().primary());
+            }
+
+            //if there was an error we try to wait and see if at some point it'll get fixed
+            logger.info("--> trying to wait");
+            assertThat(awaitBusy(new Predicate<Object>() {
+                @Override
+                public boolean apply(Object o) {
+                    boolean error = false;
+                    for (int i = 0; i < iterations; i++) {
+                        SearchResponse searchResponse = client().prepareSearch().setSearchType(SearchType.COUNT).setQuery(matchAllQuery()).get();
+                        if (searchResponse.getHits().totalHits() != numberOfDocs) {
+                            error = true;
+                        }
+                    }
+                    return !error;
+                }
+            }, 5, TimeUnit.MINUTES), equalTo(true));
+        }
+
+        //lets now make the test fail if it was supposed to fail
+        for (int i = 0; i < iterations; i++) {
+            assertHitCount(iterationResults[i], numberOfDocs);
+        }
+    }
+
+    private void logSearchResponse(int numberOfShards, long numberOfDocs, int iteration, SearchResponse searchResponse) {
+        logger.info("iteration [{}] - successful shards: {} (expected {})", iteration, searchResponse.getSuccessfulShards(), numberOfShards);
+        logger.info("iteration [{}] - failed shards: {} (expected 0)", iteration, searchResponse.getFailedShards());
+        if (searchResponse.getShardFailures() != null && searchResponse.getShardFailures().length > 0) {
+            logger.info("iteration [{}] - shard failures: {}", iteration, Arrays.toString(searchResponse.getShardFailures()));
+        }
+        logger.info("iteration [{}] - returned documents: {} (expected {})", iteration, searchResponse.getHits().totalHits(), numberOfDocs);
+    }
+
+    private void refreshAndAssert() throws InterruptedException {
+        assertThat(awaitBusy(new Predicate<Object>() {
+            public boolean apply(Object o) {
+                try {
+                    RefreshResponse actionGet = client().admin().indices().prepareRefresh().execute().actionGet();
+                    assertNoFailures(actionGet);
+                    return actionGet.getTotalShards() == actionGet.getSuccessfulShards();
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 5, TimeUnit.MINUTES), equalTo(true));
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool.helpJoin(ForkJoinPool.java:1883)
+	java.base/java.util.concurrent.ForkJoinTask.awaitDone(ForkJoinTask.java:440)
+	java.base/java.util.concurrent.ForkJoinTask.join(ForkJoinTask.java:670)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync(Tasks.scala:243)
+	scala.collection.parallel.ForkJoinTasks$FJTWrappedTask.sync$(Tasks.scala:243)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.sync(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:173)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/8704.java

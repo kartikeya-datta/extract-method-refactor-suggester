@@ -1,0 +1,170 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/5883.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/5883.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/5883.java
+text:
+```scala
+r@@eturn (options == null) ? false : options.contains(option);
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.commons.lang3.text.translate;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Arrays;
+import java.util.EnumSet;
+
+/**
+ * Translates escaped unicode values of the form \\u+\d\d\d\d back to 
+ * unicode.
+ * 
+ * @author Apache Software Foundation
+ * @since 3.0
+ * @version $Id$
+ */
+public class UnicodeUnescaper extends CharSequenceTranslator {
+
+    public static enum OPTION { escapePlus }
+
+    // TODO?: Create an OptionsSet class to hide some of the conditional logic below
+    private final EnumSet<OPTION> options;
+
+    /**
+     * Create a UnicodeUnescaper.
+     *
+     * The constructor takes a list of options, only one of which is currently 
+     * available (whether to expect a plus sign after the 'u'). 
+     *
+     * For example, to handle "\\u+0047":
+     *    new UnicodeUnescaper(UnicodeUnescaper.OPTION.escapePlus)
+     *
+     * @param OPTION... options to apply to this unescaper
+     */
+    public UnicodeUnescaper(OPTION... options) {
+        if(options.length > 0) {
+            this.options = EnumSet.copyOf(Arrays.asList(options));
+        } else {
+            this.options = null;
+        }
+    }
+
+    /**
+     * Whether the passed in option is currently set.
+     *
+     * @param OPTION option to check state of
+     * @return whether the option is set
+     */
+    public boolean isSet(OPTION option) { 
+        return (options == null) ? false : options.contains(opt);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int translate(CharSequence input, int index, Writer out) throws IOException {
+        if(input.charAt(index) == '\\') {
+            if( (index + 1 < input.length()) && input.charAt(index + 1) == 'u') {
+                // consume optional additional 'u' chars
+                int i=2;
+                while( (index + i < input.length()) && input.charAt(index + i) == 'u') {
+                    i++;
+                }
+
+                // consume + symbol in \\u+0045
+                if(isSet(OPTION.escapePlus)) {
+                    if( (index + i < input.length()) && (input.charAt(index + i) == '+') ) {
+                        i++;
+                    }
+                }
+
+                if( (index + i + 4 <= input.length()) ) {
+                    // Get 4 hex digits
+                    CharSequence unicode = input.subSequence(index + i, index + i + 4);
+
+                    try {
+                        int value = Integer.parseInt(unicode.toString(), 16);
+                        out.write((char) value);
+                    } catch (NumberFormatException nfe) {
+                        throw new IllegalArgumentException("Unable to parse unicode value: " + unicode, nfe);
+                    }
+                    return i + 4;
+                } else {
+                    throw new IllegalArgumentException("Less than 4 hex digits in unicode value: '" + 
+                                                       input.subSequence(index, input.length()) +
+                                                       "' due to end of CharSequence");
+                }
+            }
+        }
+        return 0;
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/5883.java

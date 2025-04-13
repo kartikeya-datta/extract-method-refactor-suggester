@@ -1,0 +1,292 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/13076.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/13076.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/13076.java
+text:
+```scala
+C@@onstructor<?>[] cons = CharSetUtils.class.getDeclaredConstructors();
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.commons.lang;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import junit.textui.TestRunner;
+
+/**
+ * Unit tests {@link org.apache.commons.lang.CharSetUtils}.
+ *
+ * @author <a href="mailto:ridesmet@users.sourceforge.net">Ringo De Smet</a>
+ * @author Stephen Colebourne
+ * @author Gary D. Gregory
+ * @version $Id$
+ */
+public class CharSetUtilsTest extends TestCase {
+    
+    public CharSetUtilsTest(String name) {
+        super(name);
+    }
+
+    public static void main(String[] args) {
+        TestRunner.run(suite());
+    }
+
+    public static Test suite() {
+        TestSuite suite = new TestSuite(CharSetUtilsTest.class);
+        suite.setName("CharSetUtils Tests");
+        return suite;
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+    }
+
+    //-----------------------------------------------------------------------
+    public void testConstructor() {
+        assertNotNull(new CharSetUtils());
+        Constructor[] cons = CharSetUtils.class.getDeclaredConstructors();
+        assertEquals(1, cons.length);
+        assertEquals(true, Modifier.isPublic(cons[0].getModifiers()));
+        assertEquals(true, Modifier.isPublic(CharSetUtils.class.getModifiers()));
+        assertEquals(false, Modifier.isFinal(CharSetUtils.class.getModifiers()));
+    }
+    
+    //-----------------------------------------------------------------------
+    public void testSqueeze_StringString() {
+        assertEquals(null, CharSetUtils.squeeze(null, (String) null));
+        assertEquals(null, CharSetUtils.squeeze(null, ""));
+        
+        assertEquals("", CharSetUtils.squeeze("", (String) null));
+        assertEquals("", CharSetUtils.squeeze("", ""));
+        assertEquals("", CharSetUtils.squeeze("", "a-e"));
+        
+        assertEquals("hello", CharSetUtils.squeeze("hello", (String) null));
+        assertEquals("hello", CharSetUtils.squeeze("hello", ""));
+        assertEquals("hello", CharSetUtils.squeeze("hello", "a-e"));
+        assertEquals("helo", CharSetUtils.squeeze("hello", "l-p"));
+        assertEquals("heloo", CharSetUtils.squeeze("helloo", "l"));
+        assertEquals("hello", CharSetUtils.squeeze("helloo", "^l"));
+    }
+    
+    public void testSqueeze_StringStringarray() {
+        assertEquals(null, CharSetUtils.squeeze(null, (String[]) null));
+        assertEquals(null, CharSetUtils.squeeze(null, new String[0]));
+        assertEquals(null, CharSetUtils.squeeze(null, new String[] {null}));
+        assertEquals(null, CharSetUtils.squeeze(null, new String[] {"el"}));
+        
+        assertEquals("", CharSetUtils.squeeze("", (String[]) null));
+        assertEquals("", CharSetUtils.squeeze("", new String[0]));
+        assertEquals("", CharSetUtils.squeeze("", new String[] {null}));
+        assertEquals("", CharSetUtils.squeeze("", new String[] {"a-e"}));
+        
+        assertEquals("hello", CharSetUtils.squeeze("hello", (String[]) null));
+        assertEquals("hello", CharSetUtils.squeeze("hello", new String[0]));
+        assertEquals("hello", CharSetUtils.squeeze("hello", new String[] {null}));
+        assertEquals("hello", CharSetUtils.squeeze("hello", new String[] {"a-e"}));
+        
+        assertEquals("helo", CharSetUtils.squeeze("hello", new String[] { "el" }));
+        assertEquals("hello", CharSetUtils.squeeze("hello", new String[] { "e" }));
+        assertEquals("fofof", CharSetUtils.squeeze("fooffooff", new String[] { "of" }));
+        assertEquals("fof", CharSetUtils.squeeze("fooooff", new String[] { "fo" }));
+    }
+
+    //-----------------------------------------------------------------------
+    public void testCount_StringString() {
+        assertEquals(0, CharSetUtils.count(null, (String) null));
+        assertEquals(0, CharSetUtils.count(null, ""));
+        
+        assertEquals(0, CharSetUtils.count("", (String) null));
+        assertEquals(0, CharSetUtils.count("", ""));
+        assertEquals(0, CharSetUtils.count("", "a-e"));
+        
+        assertEquals(0, CharSetUtils.count("hello", (String) null));
+        assertEquals(0, CharSetUtils.count("hello", ""));
+        assertEquals(1, CharSetUtils.count("hello", "a-e"));
+        assertEquals(3, CharSetUtils.count("hello", "l-p"));
+    }
+    
+    public void testCount_StringStringarray() {
+        assertEquals(0, CharSetUtils.count(null, (String[]) null));
+        assertEquals(0, CharSetUtils.count(null, new String[0]));
+        assertEquals(0, CharSetUtils.count(null, new String[] {null}));
+        assertEquals(0, CharSetUtils.count(null, new String[] {"a-e"}));
+        
+        assertEquals(0, CharSetUtils.count("", (String[]) null));
+        assertEquals(0, CharSetUtils.count("", new String[0]));
+        assertEquals(0, CharSetUtils.count("", new String[] {null}));
+        assertEquals(0, CharSetUtils.count("", new String[] {"a-e"}));
+        
+        assertEquals(0, CharSetUtils.count("hello", (String[]) null));
+        assertEquals(0, CharSetUtils.count("hello", new String[0]));
+        assertEquals(0, CharSetUtils.count("hello", new String[] {null}));
+        assertEquals(1, CharSetUtils.count("hello", new String[] {"a-e"}));
+        
+        assertEquals(3, CharSetUtils.count("hello", new String[] { "el" }));
+        assertEquals(0, CharSetUtils.count("hello", new String[] { "x" }));
+        assertEquals(2, CharSetUtils.count("hello", new String[] { "e-i" }));
+        assertEquals(5, CharSetUtils.count("hello", new String[] { "a-z" }));
+        assertEquals(0, CharSetUtils.count("hello", new String[] { "" }));
+    }
+
+    //-----------------------------------------------------------------------
+    public void testKeep_StringString() {
+        assertEquals(null, CharSetUtils.keep(null, (String) null));
+        assertEquals(null, CharSetUtils.keep(null, ""));
+        
+        assertEquals("", CharSetUtils.keep("", (String) null));
+        assertEquals("", CharSetUtils.keep("", ""));
+        assertEquals("", CharSetUtils.keep("", "a-e"));
+        
+        assertEquals("", CharSetUtils.keep("hello", (String) null));
+        assertEquals("", CharSetUtils.keep("hello", ""));
+        assertEquals("", CharSetUtils.keep("hello", "xyz"));
+        assertEquals("hello", CharSetUtils.keep("hello", "a-z"));
+        assertEquals("hello", CharSetUtils.keep("hello", "oleh"));
+        assertEquals("ell", CharSetUtils.keep("hello", "el"));
+    }
+    
+    public void testKeep_StringStringarray() {
+        assertEquals(null, CharSetUtils.keep(null, (String[]) null));
+        assertEquals(null, CharSetUtils.keep(null, new String[0]));
+        assertEquals(null, CharSetUtils.keep(null, new String[] {null}));
+        assertEquals(null, CharSetUtils.keep(null, new String[] {"a-e"}));
+        
+        assertEquals("", CharSetUtils.keep("", (String[]) null));
+        assertEquals("", CharSetUtils.keep("", new String[0]));
+        assertEquals("", CharSetUtils.keep("", new String[] {null}));
+        assertEquals("", CharSetUtils.keep("", new String[] {"a-e"}));
+        
+        assertEquals("", CharSetUtils.keep("hello", (String[]) null));
+        assertEquals("", CharSetUtils.keep("hello", new String[0]));
+        assertEquals("", CharSetUtils.keep("hello", new String[] {null}));
+        assertEquals("e", CharSetUtils.keep("hello", new String[] {"a-e"}));
+        
+        assertEquals("e", CharSetUtils.keep("hello", new String[] { "a-e" }));
+        assertEquals("ell", CharSetUtils.keep("hello", new String[] { "el" }));
+        assertEquals("hello", CharSetUtils.keep("hello", new String[] { "elho" }));
+        assertEquals("hello", CharSetUtils.keep("hello", new String[] { "a-z" }));
+        assertEquals("----", CharSetUtils.keep("----", new String[] { "-" }));
+        assertEquals("ll", CharSetUtils.keep("hello", new String[] { "l" }));
+    }
+
+    //-----------------------------------------------------------------------
+    public void testDelete_StringString() {
+        assertEquals(null, CharSetUtils.delete(null, (String) null));
+        assertEquals(null, CharSetUtils.delete(null, ""));
+        
+        assertEquals("", CharSetUtils.delete("", (String) null));
+        assertEquals("", CharSetUtils.delete("", ""));
+        assertEquals("", CharSetUtils.delete("", "a-e"));
+        
+        assertEquals("hello", CharSetUtils.delete("hello", (String) null));
+        assertEquals("hello", CharSetUtils.delete("hello", ""));
+        assertEquals("hllo", CharSetUtils.delete("hello", "a-e"));
+        assertEquals("he", CharSetUtils.delete("hello", "l-p"));
+        assertEquals("hello", CharSetUtils.delete("hello", "z"));
+    }
+    
+    public void testDelete_StringStringarray() {
+        assertEquals(null, CharSetUtils.delete(null, (String[]) null));
+        assertEquals(null, CharSetUtils.delete(null, new String[0]));
+        assertEquals(null, CharSetUtils.delete(null, new String[] {null}));
+        assertEquals(null, CharSetUtils.delete(null, new String[] {"el"}));
+        
+        assertEquals("", CharSetUtils.delete("", (String[]) null));
+        assertEquals("", CharSetUtils.delete("", new String[0]));
+        assertEquals("", CharSetUtils.delete("", new String[] {null}));
+        assertEquals("", CharSetUtils.delete("", new String[] {"a-e"}));
+        
+        assertEquals("hello", CharSetUtils.delete("hello", (String[]) null));
+        assertEquals("hello", CharSetUtils.delete("hello", new String[0]));
+        assertEquals("hello", CharSetUtils.delete("hello", new String[] {null}));
+        assertEquals("hello", CharSetUtils.delete("hello", new String[] {"xyz"}));
+
+        assertEquals("ho", CharSetUtils.delete("hello", new String[] { "el" }));
+        assertEquals("", CharSetUtils.delete("hello", new String[] { "elho" }));
+        assertEquals("hello", CharSetUtils.delete("hello", new String[] { "" }));
+        assertEquals("hello", CharSetUtils.delete("hello", ""));
+        assertEquals("", CharSetUtils.delete("hello", new String[] { "a-z" }));
+        assertEquals("", CharSetUtils.delete("----", new String[] { "-" }));
+        assertEquals("heo", CharSetUtils.delete("hello", new String[] { "l" }));
+    }
+    
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/13076.java

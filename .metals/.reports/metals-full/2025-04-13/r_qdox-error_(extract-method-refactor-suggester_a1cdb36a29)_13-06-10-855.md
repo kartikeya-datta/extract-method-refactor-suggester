@@ -1,0 +1,232 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/619.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/619.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/619.java
+text:
+```scala
+r@@eturn ByteBufferUtil.bytes(Integer.toString(i++));
+
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+package org.apache.cassandra.utils;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.util.Random;
+
+public class KeyGenerator {
+    private static ByteBuffer randomKey(Random r) {
+        byte[] bytes = new byte[48];
+        r.nextBytes(bytes);
+        return ByteBuffer.wrap(bytes);
+    }
+
+    static class RandomStringGenerator implements ResetableIterator<ByteBuffer> {
+        int i, n, seed;
+        Random random;
+
+        RandomStringGenerator(int seed, int n) {
+            i = 0;
+            this.seed = seed;
+            this.n = n;
+            reset();
+        }
+
+        public int size() {
+            return n;
+        }
+
+        public void reset() {
+            random = new Random(seed);
+        }
+
+        public boolean hasNext() {
+            return i < n;
+        }
+
+        public ByteBuffer next() {
+            i++;
+            return randomKey(random);
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class IntGenerator implements ResetableIterator<ByteBuffer> {
+        private int i, start, n;
+
+        IntGenerator(int n) {
+            this(0, n);
+        }
+
+        IntGenerator(int start, int n) {
+            this.start = start;
+            this.n = n;
+            reset();
+        }
+
+        public int size() {
+            return n - start;
+        }
+
+        public void reset() {
+            i = start;
+        }
+
+        public boolean hasNext() {
+            return i < n;
+        }
+
+        public ByteBuffer next() {
+            return ByteBuffer.wrap(Integer.toString(i++).getBytes());
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class WordGenerator implements ResetableIterator<ByteBuffer> {
+        static int WORDS;
+
+        static {
+            try {
+                BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream("/usr/share/dict/words")));
+                while (br.ready()) {
+                    br.readLine();
+                    WORDS++;
+                }
+            } catch (IOException e) {
+                WORDS = 0;
+            }
+        }
+
+        BufferedReader reader;
+        private int modulo;
+        private int skip;
+        byte[] next;
+
+        WordGenerator(int skip, int modulo) {
+            this.skip = skip;
+            this.modulo = modulo;
+            reset();
+        }
+
+        public int size() {
+            return (1 + WORDS - skip) / modulo;
+        }
+
+        public void reset() {
+            try {
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream("/usr/share/dict/words")));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            for (int i = 0; i < skip; i++) {
+                try {
+                    reader.readLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            next();
+        }
+
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        public ByteBuffer next() {
+            try {
+                byte[] s = next;
+                for (int i = 0; i < modulo; i++) {
+                    String line = reader.readLine();
+                    next = line == null ? null : line.getBytes();
+                }
+                return s == null ? null : ByteBuffer.wrap(s);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset1/Tasks/619.java

@@ -1,0 +1,189 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/9681.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/9681.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/9681.java
+text:
+```scala
+r@@eturn new AbstractPromiseToListenableFutureAdapter<Void, Void>(promise) {
+
+/*
+ * Copyright 2002-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.messaging.support.tcp;
+
+import java.net.InetSocketAddress;
+
+import org.springframework.messaging.Message;
+import org.springframework.util.concurrent.ListenableFuture;
+
+import reactor.core.Environment;
+import reactor.core.composable.Composable;
+import reactor.core.composable.Promise;
+import reactor.function.Consumer;
+import reactor.io.Buffer;
+import reactor.tcp.Reconnect;
+import reactor.tcp.TcpClient;
+import reactor.tcp.TcpConnection;
+import reactor.tcp.encoding.Codec;
+import reactor.tcp.netty.NettyTcpClient;
+import reactor.tcp.spec.TcpClientSpec;
+import reactor.tuple.Tuple;
+import reactor.tuple.Tuple2;
+
+/**
+ * A Reactor/Netty implementation of {@link TcpOperations}.
+ *
+ * @author Rossen Stoyanchev
+ * @since 4.0
+ */
+public class ReactorNettyTcpClient<P> implements TcpOperations<P> {
+
+	private Environment environment;
+
+	private TcpClient<Message<P>, Message<P>> tcpClient;
+
+
+	public ReactorNettyTcpClient(String host, int port, Codec<Buffer, Message<P>, Message<P>> codec) {
+		this.environment = new Environment();
+		this.tcpClient = new TcpClientSpec<Message<P>, Message<P>>(NettyTcpClient.class)
+				.env(this.environment)
+				.codec(codec)
+				.connect(host, port)
+				.get();
+	}
+
+
+	@Override
+	public void connect(TcpConnectionHandler<P> connectionHandler) {
+		this.connect(connectionHandler, null);
+	}
+
+	@Override
+	public void connect(final TcpConnectionHandler<P> connectionHandler,
+			final ReconnectStrategy reconnectStrategy) {
+
+		Composable<TcpConnection<Message<P>, Message<P>>> composable;
+
+		if (reconnectStrategy != null) {
+			composable = this.tcpClient.open(new Reconnect() {
+				@Override
+				public Tuple2<InetSocketAddress, Long> reconnect(InetSocketAddress address, int attempt) {
+					return Tuple.of(address, reconnectStrategy.getTimeToNextAttempt(attempt));
+				}
+			});
+		}
+		else {
+			composable = this.tcpClient.open();
+		}
+
+		composable.when(Throwable.class, new Consumer<Throwable>() {
+			@Override
+			public void accept(Throwable ex) {
+				connectionHandler.afterConnectFailure(ex);
+			}
+		});
+
+		composable.consume(new Consumer<TcpConnection<Message<P>, Message<P>>>() {
+			@Override
+			public void accept(TcpConnection<Message<P>, Message<P>> connection) {
+				connection.on().close(new Runnable() {
+					@Override
+					public void run() {
+						connectionHandler.afterConnectionClosed();
+					}
+				});
+				connection.in().consume(new Consumer<Message<P>>() {
+					@Override
+					public void accept(Message<P> message) {
+						connectionHandler.handleMessage(message);
+					}
+				});
+				connectionHandler.afterConnected(new ReactorTcpConnection<P>(connection));
+			}
+		});
+	}
+
+	@Override
+	public ListenableFuture<Void> shutdown() {
+		try {
+			Promise<Void> promise = this.tcpClient.close();
+			return new PromiseToListenableFutureAdapter<Void, Void>(promise) {
+				@Override
+				protected Void adapt(Void result) {
+					return result;
+				}
+			};
+		}
+		finally {
+			this.environment.shutdown();
+		}
+	}
+
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/9681.java

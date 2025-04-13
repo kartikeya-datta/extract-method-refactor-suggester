@@ -1,0 +1,198 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7428.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7428.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7428.java
+text:
+```scala
+L@@ist<Results> allResults = new ArrayList<>();
+
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.elasticsearch.benchmark.scripts.score;
+
+import org.elasticsearch.benchmark.scripts.score.plugin.NativeScriptExamplesPlugin;
+import org.elasticsearch.benchmark.scripts.score.script.NativeNaiveTFIDFScoreScript;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.node.Node;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
+
+/**
+ *
+ */
+public class ScriptsScoreBenchmark extends BasicScriptBenchmark {
+
+    public static void main(String[] args) throws Exception {
+
+        int minTerms = 1;
+        int maxTerms = 50;
+        int maxIter = 100;
+        int warmerIter = 10;
+
+        boolean runMVEL = false;
+        init(maxTerms);
+        List<Results> allResults = new ArrayList<BasicScriptBenchmark.Results>();
+        Settings settings = settingsBuilder().put("plugin.types", NativeScriptExamplesPlugin.class.getName()).build();
+
+        String clusterName = ScriptsScoreBenchmark.class.getSimpleName();
+        Node node1 = nodeBuilder().clusterName(clusterName).settings(settingsBuilder().put(settings).put("name", "node1")).node();
+        Client client = node1.client();
+        client.admin().cluster().prepareHealth("test").setWaitForGreenStatus().setTimeout("10s").execute().actionGet();
+
+        indexData(10000, client, false);
+        client.admin().cluster().prepareHealth("test").setWaitForGreenStatus().setTimeout("10s").execute().actionGet();
+
+        Results results = new Results();
+        results.init(maxTerms - minTerms, "native tfidf script score dense posting list",
+                "Results for native script score with dense posting list:", "black", "--");
+        // init native script searches
+        List<Entry<String, RequestInfo>> searchRequests = initNativeSearchRequests(minTerms, maxTerms,
+                NativeNaiveTFIDFScoreScript.NATIVE_NAIVE_TFIDF_SCRIPT_SCORE, true);
+        // run actual benchmark
+        runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+        allResults.add(results);
+
+        results = new Results();
+
+        results.init(maxTerms - minTerms, "term query dense posting list", "Results for term query with dense posting lists:", "green",
+                "--");
+        // init term queries
+        searchRequests = initTermQueries(minTerms, maxTerms);
+        // run actual benchmark
+        runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+        allResults.add(results);
+
+        if (runMVEL) {
+
+            results = new Results();
+            results.init(maxTerms - minTerms, "mvel tfidf dense posting list", "Results for mvel score with dense posting list:", "red",
+                    "--");
+            // init native script searches
+            searchRequests = initNativeSearchRequests(
+                    minTerms,
+                    maxTerms,
+                    "score = 0.0; fi= _terminfo[\"text\"]; for(i=0; i<text.size(); i++){terminfo = fi[text.get(i)]; score = score + terminfo.tf()*fi.getDocCount()/terminfo.df();} return score;",
+                    false);
+            // run actual benchmark
+            runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+            allResults.add(results);
+        }
+
+        indexData(10000, client, true);
+        results = new Results();
+        results.init(maxTerms - minTerms, "native tfidf script score sparse posting list",
+                "Results for native script scorewith sparse posting list:", "black", "-.");
+        // init native script searches
+        searchRequests = initNativeSearchRequests(minTerms, maxTerms, NativeNaiveTFIDFScoreScript.NATIVE_NAIVE_TFIDF_SCRIPT_SCORE, true);
+        // run actual benchmark
+        runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+        allResults.add(results);
+
+        results = new Results();
+
+        results.init(maxTerms - minTerms, "term query sparse posting list", "Results for term query with sparse posting lists:", "green",
+                "-.");
+        // init term queries
+        searchRequests = initTermQueries(minTerms, maxTerms);
+        // run actual benchmark
+        runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+        allResults.add(results);
+
+        if (runMVEL) {
+
+            results = new Results();
+            results.init(maxTerms - minTerms, "mvel tfidf sparse posting list", "Results for mvel score with sparse posting list:", "red",
+                    "-.");
+            // init native script searches
+            searchRequests = initNativeSearchRequests(
+                    minTerms,
+                    maxTerms,
+                    "score = 0.0; fi= _terminfo[\"text\"]; for(i=0; i<text.size(); i++){terminfo = fi[text.get(i)]; score = score + terminfo.tf()*fi.getDocCount()/terminfo.df();} return score;",
+                    false);
+            // run actual benchmark
+            runBenchmark(client, maxIter, results, searchRequests, minTerms, warmerIter);
+            allResults.add(results);
+        }
+        printOctaveScript(allResults, args);
+
+        client.close();
+        node1.close();
+    }
+
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:159)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/7428.java

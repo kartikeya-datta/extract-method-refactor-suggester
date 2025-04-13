@@ -1,0 +1,193 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/10743.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/10743.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[19,1]
+
+error in qdox parser
+file content:
+```java
+offset: 680
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/10743.java
+text:
+```scala
+abstract class AbstractXMLReader implements XMLReader {
+
+/*
+ * Copyright 2002-2009 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+p@@ackage org.springframework.util.xml;
+
+import org.xml.sax.ContentHandler;
+import org.xml.sax.DTDHandler;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.ext.LexicalHandler;
+
+/**
+ * Abstract base class for SAX <code>XMLReader</code> implementations. Contains properties as defined in {@link
+ * XMLReader}, and does not recognize any features.
+ *
+ * @author Arjen Poutsma
+ * @see #setContentHandler(org.xml.sax.ContentHandler)
+ * @see #setDTDHandler(org.xml.sax.DTDHandler)
+ * @see #setEntityResolver(org.xml.sax.EntityResolver)
+ * @see #setErrorHandler(org.xml.sax.ErrorHandler)
+ * @since 3.0
+ */
+abstract class AbstractXmlReader implements XMLReader {
+
+	private DTDHandler dtdHandler;
+
+	private ContentHandler contentHandler;
+
+	private EntityResolver entityResolver;
+
+	private ErrorHandler errorHandler;
+
+	private LexicalHandler lexicalHandler;
+
+	public ContentHandler getContentHandler() {
+		return contentHandler;
+	}
+
+	public void setContentHandler(ContentHandler contentHandler) {
+		this.contentHandler = contentHandler;
+	}
+
+	public void setDTDHandler(DTDHandler dtdHandler) {
+		this.dtdHandler = dtdHandler;
+	}
+
+	public DTDHandler getDTDHandler() {
+		return dtdHandler;
+	}
+
+	public EntityResolver getEntityResolver() {
+		return entityResolver;
+	}
+
+	public void setEntityResolver(EntityResolver entityResolver) {
+		this.entityResolver = entityResolver;
+	}
+
+	public ErrorHandler getErrorHandler() {
+		return errorHandler;
+	}
+
+	public void setErrorHandler(ErrorHandler errorHandler) {
+		this.errorHandler = errorHandler;
+	}
+
+	protected LexicalHandler getLexicalHandler() {
+		return lexicalHandler;
+	}
+
+	/**
+	 * Throws a <code>SAXNotRecognizedException</code> exception.
+	 *
+	 * @throws org.xml.sax.SAXNotRecognizedException
+	 *          always
+	 */
+	public boolean getFeature(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
+		throw new SAXNotRecognizedException(name);
+	}
+
+	/**
+	 * Throws a <code>SAXNotRecognizedException</code> exception.
+	 *
+	 * @throws SAXNotRecognizedException always
+	 */
+	public void setFeature(String name, boolean value) throws SAXNotRecognizedException, SAXNotSupportedException {
+		throw new SAXNotRecognizedException(name);
+	}
+
+	/**
+	 * Throws a <code>SAXNotRecognizedException</code> exception when the given property does not signify a lexical
+	 * handler. The property name for a lexical handler is <code>http://xml.org/sax/properties/lexical-handler</code>.
+	 */
+	public Object getProperty(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
+		if ("http://xml.org/sax/properties/lexical-handler".equals(name)) {
+			return lexicalHandler;
+		}
+		else {
+			throw new SAXNotRecognizedException(name);
+		}
+	}
+
+	/**
+	 * Throws a <code>SAXNotRecognizedException</code> exception when the given property does not signify a lexical
+	 * handler. The property name for a lexical handler is <code>http://xml.org/sax/properties/lexical-handler</code>.
+	 */
+	public void setProperty(String name, Object value) throws SAXNotRecognizedException, SAXNotSupportedException {
+		if ("http://xml.org/sax/properties/lexical-handler".equals(name)) {
+			lexicalHandler = (LexicalHandler) value;
+		}
+		else {
+			throw new SAXNotRecognizedException(name);
+		}
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:159)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/10743.java

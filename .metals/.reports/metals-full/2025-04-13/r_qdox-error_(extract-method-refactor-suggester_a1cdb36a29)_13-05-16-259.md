@@ -1,0 +1,240 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3942.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3942.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,1]
+
+error in qdox parser
+file content:
+```java
+offset: 1
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3942.java
+text:
+```scala
+r@@eturn !aggregationContext.scoreDocsInOrder();
+
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.elasticsearch.search.aggregations;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.lucene.search.Queries;
+import org.elasticsearch.common.lucene.search.XCollector;
+import org.elasticsearch.common.lucene.search.XConstantScoreQuery;
+import org.elasticsearch.common.lucene.search.XFilteredQuery;
+import org.elasticsearch.search.SearchParseElement;
+import org.elasticsearch.search.SearchPhase;
+import org.elasticsearch.search.aggregations.bucket.global.GlobalAggregator;
+import org.elasticsearch.search.aggregations.support.AggregationContext;
+import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.search.query.QueryPhaseExecutionException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+/**
+ *
+ */
+public class AggregationPhase implements SearchPhase {
+
+    private final AggregationParseElement parseElement;
+
+    private final AggregationBinaryParseElement binaryParseElement;
+
+    @Inject
+    public AggregationPhase(AggregationParseElement parseElement, AggregationBinaryParseElement binaryParseElement) {
+        this.parseElement = parseElement;
+        this.binaryParseElement = binaryParseElement;
+    }
+
+    @Override
+    public Map<String, ? extends SearchParseElement> parseElements() {
+        return ImmutableMap.<String, SearchParseElement>builder()
+                .put("aggregations", parseElement)
+                .put("aggs", parseElement)
+                .put("aggregations_binary", binaryParseElement)
+                .put("aggregationsBinary", binaryParseElement)
+                .put("aggs_binary", binaryParseElement)
+                .put("aggsBinary", binaryParseElement)
+                .build();
+    }
+
+    @Override
+    public void preProcess(SearchContext context) {
+        if (context.aggregations() != null) {
+            AggregationContext aggregationContext = new AggregationContext(context);
+            context.aggregations().aggregationContext(aggregationContext);
+
+            List<Aggregator> collectors = new ArrayList<>();
+            Aggregator[] aggregators = context.aggregations().factories().createTopLevelAggregators(aggregationContext);
+            for (int i = 0; i < aggregators.length; i++) {
+                if (!(aggregators[i] instanceof GlobalAggregator)) {
+                    Aggregator aggregator = aggregators[i];
+                    if (aggregator.shouldCollect()) {
+                        collectors.add(aggregator);
+                    }
+                }
+            }
+            context.aggregations().aggregators(aggregators);
+            if (!collectors.isEmpty()) {
+                context.searcher().addMainQueryCollector(new AggregationsCollector(collectors, aggregationContext));
+            }
+            aggregationContext.setNextReader(context.searcher().getIndexReader().getContext());
+        }
+    }
+
+    @Override
+    public void execute(SearchContext context) throws ElasticsearchException {
+        if (context.aggregations() == null) {
+            return;
+        }
+
+        if (context.queryResult().aggregations() != null) {
+            // no need to compute the facets twice, they should be computed on a per context basis
+            return;
+        }
+
+        Aggregator[] aggregators = context.aggregations().aggregators();
+        List<Aggregator> globals = new ArrayList<>();
+        for (int i = 0; i < aggregators.length; i++) {
+            if (aggregators[i] instanceof GlobalAggregator) {
+                globals.add(aggregators[i]);
+            }
+        }
+
+        // optimize the global collector based execution
+        if (!globals.isEmpty()) {
+            AggregationsCollector collector = new AggregationsCollector(globals, context.aggregations().aggregationContext());
+            Query query = new XConstantScoreQuery(Queries.MATCH_ALL_FILTER);
+            Filter searchFilter = context.searchFilter(context.types());
+            if (searchFilter != null) {
+                query = new XFilteredQuery(query, searchFilter);
+            }
+            try {
+                context.searcher().search(query, collector);
+                collector.postCollection();
+            } catch (Exception e) {
+                throw new QueryPhaseExecutionException(context, "Failed to execute global aggregators", e);
+            }
+        }
+
+        List<InternalAggregation> aggregations = new ArrayList<>(aggregators.length);
+        for (Aggregator aggregator : context.aggregations().aggregators()) {
+            aggregations.add(aggregator.buildAggregation(0));
+        }
+        context.queryResult().aggregations(new InternalAggregations(aggregations));
+    }
+
+
+    public static class AggregationsCollector extends XCollector {
+
+        private final AggregationContext aggregationContext;
+        private final Aggregator[] collectors;
+
+        public AggregationsCollector(Collection<Aggregator> collectors, AggregationContext aggregationContext) {
+            this.collectors = collectors.toArray(new Aggregator[collectors.size()]);
+            this.aggregationContext = aggregationContext;
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+            aggregationContext.setScorer(scorer);
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+            for (Aggregator collector : collectors) {
+                collector.collect(doc, 0);
+            }
+        }
+
+        @Override
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+            aggregationContext.setNextReader(context);
+        }
+
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+            return true;
+        }
+
+        @Override
+        public void postCollection() throws IOException {
+            for (Aggregator collector : collectors) {
+                collector.postCollection();
+            }
+        }
+    }
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:159)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset4/Tasks/3942.java
