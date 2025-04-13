@@ -21,6 +21,12 @@ A machine learning-based project to detect and recommend Extract Method refactor
 2. Extract it to `~/tools/joern`
 3. Add it to PATH or use `./joern` directly from that folder
 
+Task	Command
+- Parse Java to CPG	./joern-parse /path/to/code
+- Launch Shell	./joern
+- Import CPG	importCpg("cpg.bin.zip")
+- Explore	cpg.method.name.l, cpg.call.code.l, etc.
+
 
 ## Status
 🔧 Work in progress. Stay tuned!
