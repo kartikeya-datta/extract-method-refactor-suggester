@@ -55,3 +55,7 @@ The CSV includes a header row naming each feature, followed by one row per metho
 
 ## Status
 🔧 Work in progress. Stay tuned!
+
+
+As Data Obtaining is done. I have got a CSV file which states differnt java methods with their features. Now my task is to build a machine learning model that can analyze Java methods and suggest potential refactoring opportunities based on features extracted from the code. Specifically, my focus is on Extract Method refactoring, which involves identifying large, complex methods that could be broken down into smaller, more manageable method. 
+
