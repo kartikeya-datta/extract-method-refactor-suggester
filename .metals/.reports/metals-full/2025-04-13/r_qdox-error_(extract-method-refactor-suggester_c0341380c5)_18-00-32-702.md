@@ -1,0 +1,213 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/8360.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/8360.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,7]
+
+error in qdox parser
+file content:
+```java
+offset: 7
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/8360.java
+text:
+```scala
+final S@@ocketAddress address = new InetSocketAddress(interfaceBinding.getAddress(), domainControllerElement.getPort());
+
+/*
+ * JBoss, Home of Professional Open Source.
+ * Copyright 2010, Red Hat, Inc., and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+
+package org.jboss.as.domain.controller;
+
+import org.jboss.as.model.LocalDomainControllerElement;
+import org.jboss.as.services.net.NetworkInterfaceBinding;
+import org.jboss.logging.Logger;
+import org.jboss.msc.inject.Injector;
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Service responsible for communicating with remote service manager processes.  This will wait on a {@link java.net.ServerSocket}
+ * for requests and will and the requesting socket over to a {@link org.jboss.as.domain.controller.ServerManagerConnection} to
+ * managed on-going communication.
+ *
+ * @author John E. Bailey
+ */
+public class ServerManagerCommunicationService implements Service<Void> {
+    static final ServiceName SERVICE_NAME = ServiceName.JBOSS.append("domain", "controller", "communication");
+    private static final Logger log = Logger.getLogger("org.jboss.as.domain.controller");
+    private InjectedValue<NetworkInterfaceBinding> interfaceBindingValue = new InjectedValue<NetworkInterfaceBinding>();
+    private final LocalDomainControllerElement domainControllerElement;
+    private final DomainController domainController;
+    private ServerSocket serverSocket;
+    private ExecutorService executorService;
+    private ConcurrentMap<String, ServerManagerConnection> serverManagerConnections = new ConcurrentHashMap<String, ServerManagerConnection>();
+
+    public ServerManagerCommunicationService(final DomainController domainController, final LocalDomainControllerElement domainControllerElement) {
+        this.domainController = domainController;
+        this.domainControllerElement = domainControllerElement;
+    }
+
+    @Override
+    public synchronized void start(StartContext context) throws StartException {
+        executorService = Executors.newCachedThreadPool(); // TODO inject from JBoss Threads
+        final NetworkInterfaceBinding interfaceBinding = interfaceBindingValue.getValue();
+        try {
+            serverSocket = new ServerSocket();
+            final SocketAddress address = new InetSocketAddress(interfaceBinding.getAddress(), domainControllerElement.getAdminPort());
+            serverSocket.setReuseAddress(true);
+            serverSocket.bind(address, 20);
+            executorService.execute(new ServerSocketListener(serverSocket));
+        } catch (Exception e) {
+            throw new StartException("Failed to start server socket", e);
+        }
+    }
+
+    @Override
+    public synchronized void stop(StopContext context) {
+        if(serverSocket != null) {
+            try {
+                serverSocket.close();
+                serverSocket = null;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(executorService != null) {
+            executorService.shutdown();
+        }
+    }
+
+    @Override
+    public Void getValue() throws IllegalStateException {
+        return null;
+    }
+
+
+    public Injector<NetworkInterfaceBinding> getInterfaceInjector() {
+        return interfaceBindingValue;
+    }
+
+
+    class ServerSocketListener implements Runnable {
+
+        private final ServerSocket serverSocket;
+        private final ExecutorService executor = Executors.newCachedThreadPool();
+
+        private ServerSocketListener(ServerSocket serverSocket) {
+            this.serverSocket = serverSocket;
+        }
+
+        @Override
+        public void run() {
+            boolean done = false;
+            log.infof("DomainController listening on %d for ServerManager requests.", serverSocket.getLocalPort());
+            while (!done) {
+                try {
+                    final Socket socket = serverSocket.accept();
+                    final String id = String.format("%s:%d", socket.getInetAddress().getHostAddress(), socket.getPort());
+                    final ServerManagerConnection connection = new ServerManagerConnection(id, domainController, socket);
+                    serverManagerConnections.putIfAbsent(id, connection);
+                    executor.execute(connection);
+                } catch (SocketException e) {
+                    log.info("Closed server socket");
+                    done = true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private void shutdown() {
+            executor.shutdown();
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset3/Tasks/8360.java

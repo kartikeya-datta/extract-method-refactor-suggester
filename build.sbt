@@ -1,10 +1,11 @@
-name := "ExtractMethodRefactorSuggester"
+name := "MethodMetricsExtractor"
 
 version := "0.1"
 
-scalaVersion := "2.12.18"
+scalaVersion := "3.6.4"
 
-libraryDependencies ++= Seq(
-  "io.shiftleft" %% "semanticcpg" % "0.6.0", // Ensure you use the correct version here
-  "org.scala-lang" % "scala-library" % "2.12.18"
-)
+// Adding the custom resolver for ShiftLeft Maven Repo
+resolvers += "ShiftLeft Maven Repo" at "https://shiftleft.io/maven"
+
+// Adding the library dependency for joern-cli
+libraryDependencies += "io.joern" %% "joern-cli" % "4.0.3203"

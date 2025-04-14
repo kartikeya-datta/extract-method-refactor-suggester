@@ -1,0 +1,234 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5326.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5326.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,8]
+
+error in qdox parser
+file content:
+```java
+offset: 8
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5326.java
+text:
+```scala
+public b@@oolean removeChannel(ID channelID) {
+
+/*******************************************************************************
+ * Copyright (c) 2004 Composent, Inc., Peter Nehrer, Boris Bokowski. All rights reserved. This
+ * program and the accompanying materials are made available under the terms of
+ * the Eclipse Public License v1.0 which accompanies this distribution, and is
+ * available at http://www.eclipse.org/legal/epl-v10.html
+ * 
+ * Contributors: Composent, Inc. - initial API and implementation
+ ******************************************************************************/
+package org.eclipse.ecf.provider.datashare;
+
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.Map;
+import org.eclipse.ecf.core.ISharedObject;
+import org.eclipse.ecf.core.ISharedObjectContainerConfig;
+import org.eclipse.ecf.core.ISharedObjectTransactionConfig;
+import org.eclipse.ecf.core.ISharedObjectTransactionParticipantsFilter;
+import org.eclipse.ecf.core.SharedObjectCreateException;
+import org.eclipse.ecf.core.SharedObjectDescription;
+import org.eclipse.ecf.core.SharedObjectFactory;
+import org.eclipse.ecf.core.SharedObjectTypeDescription;
+import org.eclipse.ecf.core.identity.ID;
+import org.eclipse.ecf.core.identity.IDFactory;
+import org.eclipse.ecf.core.identity.IDInstantiationException;
+import org.eclipse.ecf.core.identity.Namespace;
+import org.eclipse.ecf.core.identity.StringID;
+import org.eclipse.ecf.core.util.ECFException;
+import org.eclipse.ecf.ds.IChannel;
+import org.eclipse.ecf.ds.IChannelConfig;
+import org.eclipse.ecf.ds.IChannelContainer;
+import org.eclipse.ecf.ds.IChannelListener;
+import org.eclipse.ecf.provider.generic.TCPClientSOContainer;
+
+public class DatashareContainer extends TCPClientSOContainer implements
+		IChannelContainer {
+	protected static final int DEFAULT_CONTAINER_KEEP_ALIVE = 30000;
+	protected static final int DEFAULT_TRANSACTION_WAIT = 30000;
+	
+	public DatashareContainer(ISharedObjectContainerConfig config) {
+		super(config, DEFAULT_CONTAINER_KEEP_ALIVE);
+	}
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ecf.ds.IChannelContainer#createChannel(org.eclipse.ecf.ds.IChannelConfig)
+	 */
+	public IChannel createChannel(final ID newID,
+			final IChannelListener listener, final Map properties)
+			throws ECFException {
+		return createChannel(new IChannelConfig() {
+			public IChannelListener getListener() {
+				return listener;
+			}
+			public ISharedObjectTransactionConfig getTransactionConfig() {
+				return new ISharedObjectTransactionConfig() {
+					public int getTimeout() {
+						return DEFAULT_TRANSACTION_WAIT;
+					}
+					public ISharedObjectTransactionParticipantsFilter getParticipantsFilter() {
+						return null;
+					}};
+			}
+			public Object getAdapter(Class adapter) {
+				return null;
+			}
+			public SharedObjectDescription getHostDescription() {
+				return new SharedObjectDescription(BaseChannel.class, newID,
+						properties);
+			}
+		});
+	}
+	protected SharedObjectDescription getDefaultChannelDescription()
+			throws IDInstantiationException {
+		return new SharedObjectDescription(BaseChannel.class, IDFactory
+				.getDefault().createGUID(), new HashMap());
+	}
+	protected ISharedObject createSharedObject(
+			SharedObjectTypeDescription typeDescription,
+			ISharedObjectTransactionConfig transactionConfig,
+			IChannelListener listener) throws SharedObjectCreateException {
+		Class clazz;
+		try {
+			clazz = Class.forName(typeDescription.getClassName());
+		} catch (ClassNotFoundException e) {
+			throw new SharedObjectCreateException(
+					"No constructor for shared object of class "
+							+ typeDescription.getClassName(), e);
+		}
+		Constructor cons = null;
+		try {
+			cons = clazz.getDeclaredConstructor(new Class[] {
+					ISharedObjectTransactionConfig.class,
+					IChannelListener.class });
+		} catch (NoSuchMethodException e) {
+			throw new SharedObjectCreateException(
+					"No constructor for shared object of class "
+							+ typeDescription.getClassName(), e);
+		}
+		ISharedObject so = null;
+		try {
+			so = (ISharedObject) cons.newInstance(new Object[] {
+					transactionConfig, listener });
+		} catch (Exception e) {
+			throw new SharedObjectCreateException(
+					"Cannot create instance of class "
+							+ typeDescription.getClassName(), e);
+		}
+		return so;
+	}
+	public IChannel createChannel(IChannelConfig newChannelConfig)
+			throws ECFException {
+		SharedObjectDescription sodesc = newChannelConfig.getHostDescription();
+		if (sodesc == null)
+			sodesc = getDefaultChannelDescription();
+		SharedObjectTypeDescription sotypedesc = sodesc.getTypeDescription();
+		IChannelListener listener = newChannelConfig.getListener();
+		ISharedObjectTransactionConfig transactionConfig = newChannelConfig
+				.getTransactionConfig();
+		ISharedObject so = null;
+		if (sotypedesc.getDescription() != null) {
+			so = SharedObjectFactory
+					.getDefault()
+					.createSharedObject(
+							sotypedesc,
+							new String[] {
+									ISharedObjectTransactionConfig.class
+											.getName(),
+									IChannelListener.class.getName() },
+							new Object[] { transactionConfig, listener });
+		} else {
+			so = createSharedObject(sotypedesc, transactionConfig, listener);
+		}
+		IChannel channel = (IChannel) so.getAdapter(IChannel.class);
+		if (channel == null)
+			throw new SharedObjectCreateException("Cannot coerce object "
+					+ channel + " to be of type IChannel");
+		ID newID = sodesc.getID();
+		if (newID == null)
+			newID = IDFactory.getDefault().createGUID();
+		Map properties = sodesc.getProperties();
+		if (properties == null)
+			properties = new HashMap();
+		// Now add channel to container...this will block
+		getSharedObjectManager().addSharedObject(newID, so, properties);
+		return channel;
+	}
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ecf.ds.IChannelContainer#getChannel(org.eclipse.ecf.core.identity.ID)
+	 */
+	public IChannel getChannel(ID channelID) {
+		return (IChannel) getSharedObjectManager().getSharedObject(channelID);
+	}
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ecf.ds.IChannelContainer#disposeChannel(org.eclipse.ecf.core.identity.ID)
+	 */
+	public boolean disposeChannel(ID channelID) {
+		ISharedObject o = getSharedObjectManager()
+				.removeSharedObject(channelID);
+		return (o != null);
+	}
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.ecf.ds.IChannelContainer#getChannelNamespace()
+	 */
+	public Namespace getChannelNamespace() {
+		return IDFactory.getDefault().getNamespaceByName(StringID.class.getName());
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5326.java

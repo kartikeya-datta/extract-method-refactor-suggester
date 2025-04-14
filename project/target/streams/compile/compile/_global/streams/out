@@ -1,7 +1,0 @@
-[0m[[0m[31merror[0m] [0m[0m/Users/kartikeyadatta/Documents/GitHub/extract-method-refactor-suggester/project/src/main/scala/feature_extraction.scala:2:11: object shiftleft is not a member of package io[0m
-[0m[[0m[31merror[0m] [0m[0mimport io.shiftleft.semanticcpg.language._[0m
-[0m[[0m[31merror[0m] [0m[0m          ^[0m
-[0m[[0m[31merror[0m] [0m[0m/Users/kartikeyadatta/Documents/GitHub/extract-method-refactor-suggester/project/src/main/scala/feature_extraction.scala:7:15: not found: value CpgLoader[0m
-[0m[[0m[31merror[0m] [0m[0m    val cpg = CpgLoader.load("/Users/kartikeyadatta/Documents/GitHub/extract-method-refactor-suggester/data/code-rep-dataset/cpg.bin")[0m
-[0m[[0m[31merror[0m] [0m[0m              ^[0m
-[0m[[0m[31merror[0m] [0m[0mtwo errors found[0m

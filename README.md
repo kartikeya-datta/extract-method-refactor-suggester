@@ -27,6 +27,31 @@ Task	Command
 - Import CPG	importCpg("cpg.bin.zip")
 - Explore	cpg.method.name.l, cpg.call.code.l, etc.
 
+Steps Performed in the CPG Creation Notebook
+1) Describe the Dataset:
+The notebook outlines the goal of creating a Code Property Graph (CPG) from a Java dataset downloaded from the CodRep repository (https://github.com/ASSERT-KTH/CodRep).
+2) Convert File Formats:
+Converts text files (.txt) containing Java code in the dataset (located at /Users/path.../data/code-rep-dataset/Dataset5/Tasks) to Java files (.java) for processing.
+3) Generate the CPG:
+Uses Joern to create a CPG file (cpg.bin) from the Java dataset, representing the codebase as a graph for analysis.
+4) Load the CPG:
+Loads the generated CPG file (intended at /Users/kartikeyadatta/Documents/GitHub/extract-method-refactor-suggester/data/code-rep-dataset/cpg.bin) for querying and feature extraction.
+5) Extract Method Features:
+Iterates through each method in the CPG and collects the following characteristics:
+Method Name: The name of the method.
+Number of Parameters: How many parameters the method accepts.
+Line Number: The source code line where the method is defined.
+Number of Calls: The count of method calls made within the method.
+Number of Local Variables: The number of variables defined locally in the method.
+Number of Return Statements: How many return statements the method contains.
+Number of Invocations: The count of method calls (similar to number of calls).
+Body Size: The total number of nodes in the method’s abstract syntax tree (AST), indicating method complexity.
+Number of Control Structures: The count of control structures (e.g., if, for, while) in the method.
+Full Name: The fully qualified name of the method, including its class and package.
+6) Save Features to CSV:
+Stores the extracted features in a CSV file (features_output.csv) at /Users/kartikeyadatta/Documents/GitHub/extract-method-refactor-suggester/features_output.csv.
+The CSV includes a header row naming each feature, followed by one row per method with its corresponding values.
+
 
 ## Status
 🔧 Work in progress. Stay tuned!

@@ -1,0 +1,181 @@
+error id: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5877.java
+file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5877.java
+### com.thoughtworks.qdox.parser.ParseException: syntax error @[1,7]
+
+error in qdox parser
+file content:
+```java
+offset: 7
+uri: file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5877.java
+text:
+```scala
+final I@@ResourceStream resource = new ClassLoaderResourceStreamLocator().locate(null,
+
+/*
+ * $Id$
+ * $Revision$ $Date$
+ * 
+ * ==================================================================== Licensed
+ * under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the
+ * License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package wicket.examples.hangman;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
+import wicket.util.io.Streams;
+import wicket.util.resource.IResourceStream;
+import wicket.util.resource.ResourceStreamNotFoundException;
+import wicket.util.resource.locator.ClassLoaderResourceStreamLocator;
+
+/**
+ * The word generator is responsible for reading in a list of words from a data
+ * file and serving them up in a random order. The generator keeps a state
+ * record of which words it has served and randomises them again when the last
+ * word has been served.
+ * 
+ * @author Chris Turner
+ * @version 1.0
+ */
+public class WordGenerator implements Serializable
+{
+	/** List of words */
+	private final List words;
+
+	/** Index into words */
+	private int index;
+
+	/**
+	 * Create the word generator, loading the words and preparing them for
+	 * serving.
+	 */
+	public WordGenerator()
+	{
+		try
+		{
+			final IResourceStream resource = new ClassLoaderResourceStreamLocator().locate(
+					"wicket/examples/hangman/WordList", "", Locale.getDefault(), ".txt");
+			final String wordlist = Streams.readString(resource.getInputStream());
+			this.words = Arrays.asList(wordlist.split("\\s+"));
+			shuffle();
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Couldn't read word list");
+		}
+		catch (ResourceStreamNotFoundException e)
+		{
+			throw new RuntimeException("Couldn't read word list");
+		}
+	}
+
+	/**
+	 * Create the word generator using the supplied array of words as the word
+	 * source to use.
+	 * 
+	 * @param words
+	 *            The words to use
+	 */
+	public WordGenerator(final String[] words)
+	{
+		this.words = Arrays.asList(words);
+		shuffle();
+	}
+
+	/**
+	 * Returns the next word from the word generator.
+	 * 
+	 * @return The next word
+	 */
+	public Word next()
+	{
+		if (index == words.size())
+		{
+			shuffle();
+		}
+		return new Word((String)words.get(index++));
+	}
+
+	/**
+	 * Get the number of words that were discovered.
+	 * 
+	 * @return The number of words
+	 */
+	public int size()
+	{
+		return words.size();
+	}
+
+	/**
+	 * Randomises the list of loaded words and sets the index back to the
+	 * beginning of the word list.
+	 */
+	private void shuffle()
+	{
+		Collections.shuffle(words);
+		index = 0;
+	}
+}
+```
+
+```
+
+
+
+#### Error stacktrace:
+
+```
+com.thoughtworks.qdox.parser.impl.Parser.yyerror(Parser.java:2025)
+	com.thoughtworks.qdox.parser.impl.Parser.yyparse(Parser.java:2147)
+	com.thoughtworks.qdox.parser.impl.Parser.parse(Parser.java:2006)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:232)
+	com.thoughtworks.qdox.library.SourceLibrary.parse(SourceLibrary.java:190)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:94)
+	com.thoughtworks.qdox.library.SourceLibrary.addSource(SourceLibrary.java:89)
+	com.thoughtworks.qdox.library.SortedClassLibraryBuilder.addSource(SortedClassLibraryBuilder.java:162)
+	com.thoughtworks.qdox.JavaProjectBuilder.addSource(JavaProjectBuilder.java:174)
+	scala.meta.internal.mtags.JavaMtags.indexRoot(JavaMtags.scala:48)
+	scala.meta.internal.metals.SemanticdbDefinition$.foreachWithReturnMtags(SemanticdbDefinition.scala:97)
+	scala.meta.internal.metals.Indexer.indexSourceFile(Indexer.scala:489)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7(Indexer.scala:361)
+	scala.meta.internal.metals.Indexer.$anonfun$indexWorkspaceSources$7$adapted(Indexer.scala:356)
+	scala.collection.IterableOnceOps.foreach(IterableOnce.scala:619)
+	scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:617)
+	scala.collection.AbstractIterator.foreach(Iterator.scala:1306)
+	scala.collection.parallel.ParIterableLike$Foreach.leaf(ParIterableLike.scala:938)
+	scala.collection.parallel.Task.$anonfun$tryLeaf$1(Tasks.scala:52)
+	scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.scala:18)
+	scala.util.control.Breaks$$anon$1.catchBreak(Breaks.scala:97)
+	scala.collection.parallel.Task.tryLeaf(Tasks.scala:55)
+	scala.collection.parallel.Task.tryLeaf$(Tasks.scala:49)
+	scala.collection.parallel.ParIterableLike$Foreach.tryLeaf(ParIterableLike.scala:935)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal(Tasks.scala:169)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.internal$(Tasks.scala:156)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.internal(Tasks.scala:304)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute(Tasks.scala:149)
+	scala.collection.parallel.AdaptiveWorkStealingTasks$AWSTWrappedTask.compute$(Tasks.scala:148)
+	scala.collection.parallel.AdaptiveWorkStealingForkJoinTasks$AWSFJTWrappedTask.compute(Tasks.scala:304)
+	java.base/java.util.concurrent.RecursiveAction.exec(RecursiveAction.java:194)
+	java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:373)
+	java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1182)
+	java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1655)
+	java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1622)
+	java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:165)
+```
+#### Short summary: 
+
+QDox parse error in file://<WORKSPACE>/data/code-rep-dataset/Dataset5/Tasks/5877.java
